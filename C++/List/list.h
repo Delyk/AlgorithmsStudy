@@ -1,5 +1,6 @@
 #pragma once
-// Напоминалка: список любых значенийб XOR-список, список с пропусками,
+// список любых значенийб XOR-список, список с пропусками,
+#include <cmath>
 #include <cstddef>
 #include <initializer_list>
 #include <iterator>
@@ -35,7 +36,10 @@ template <typename T> class single_list : public list<T> {
     node(const T &);
     void clear() override;
   };
+  std::shared_ptr<node> merge(single_list<T> &left, single_list<T> &right);
+  std::shared_ptr<node> getMiddle(std::shared_ptr<node>);
 
+protected:
   std::shared_ptr<node> head;
 
 public:
@@ -43,11 +47,12 @@ public:
   single_list();
   single_list(const T &);
   single_list(const single_list &);
-  single_list(const single_list &&) noexcept;
+  single_list(single_list &&) noexcept;
   single_list(std::initializer_list<T>);
+  single_list(std::shared_ptr<node>);
   // Операторы присваивания
   single_list &operator=(const single_list &);
-  single_list &operator=(const single_list &&) noexcept;
+  single_list &operator=(single_list &&) noexcept;
   single_list &operator=(std::initializer_list<T>);
   // Добавление/удаление элементов
   void push(const T &) override;
@@ -93,21 +98,29 @@ public:
 // Методы односвязного списка
 // Конструктор элемента
 template <typename T>
-single_list<T>::node::node(const T &value)
-    : list<T>::baseNode::data(value), next(nullptr) {}
+single_list<T>::node::node(const T &value) : next(nullptr) {
+  this->data = value;
+}
 
 template <typename T> void single_list<T>::node::clear() {
   next = nullptr;
-  list<T>::data = NULL;
+  list<T>::baseNode::data = T{};
 }
 
 // Конструкторы
+template <typename T> single_list<T>::single_list() : head(nullptr) {
+  this->size = 0;
+}
+
 template <typename T>
-single_list<T>::single_list() : head(nullptr), list<T>::size(0) {}
+single_list<T>::single_list(std::shared_ptr<typename single_list<T>::node> head)
+    : head(head) {}
 
 template <typename T>
 single_list<T>::single_list(const T &value)
-    : head(std::make_shared<T>(value)), list<T>::size(1) {}
+    : head(std::make_shared<node>(value)) {
+  this->size = 1;
+}
 
 template <typename T> single_list<T>::single_list(const single_list &right) {
   for (auto i : right) {
@@ -117,7 +130,7 @@ template <typename T> single_list<T>::single_list(const single_list &right) {
 }
 
 template <typename T>
-single_list<T>::single_list(const single_list &&right) noexcept {
+single_list<T>::single_list(single_list &&right) noexcept {
   for (auto i : right) {
     this->push(i);
   }
@@ -136,21 +149,27 @@ single_list<T>::single_list(std::initializer_list<T> init) {
 // Присваивание
 template <typename T>
 single_list<T> &single_list<T>::operator=(const single_list &right) {
-  this->clear();
-  for (auto i : right) {
-    this->push(i);
+  if (&right != this) {
+    this->clear();
+    for (auto i : right) {
+      this->push(i);
+    }
+    list<T>::size = right.list<T>::size;
   }
-  list<T>::size = right.list<T>::size;
+  return *this;
 }
 
 template <typename T>
-single_list<T> &single_list<T>::operator=(const single_list &&right) noexcept {
-  this->clear();
-  for (auto i : right) {
-    this->push(i);
+single_list<T> &single_list<T>::operator=(single_list &&right) noexcept {
+  if (&right != this) {
+    this->clear();
+    for (auto i : right) {
+      this->push(i);
+    }
+    list<T>::size = right.list<T>::size;
+    right.clear();
   }
-  list<T>::size = right.list<T>::size;
-  right.clear();
+  return *this;
 }
 
 template <typename T>
@@ -160,6 +179,7 @@ single_list<T> &single_list<T>::operator=(std::initializer_list<T> init) {
     this->push(i);
   }
   list<T>::size = init.size();
+  return *this;
 }
 
 // Добавить в конец
@@ -178,15 +198,27 @@ template <typename T> void single_list<T>::push(const T &value) {
 }
 // Удалить из конца
 template <typename T> T single_list<T>::pop() {
-  std::shared_ptr<node> cursor = head;
-  while (cursor->next->next != nullptr) {
-    cursor = head->next;
+  T tmp{};
+  if (head) {
+    if (!head->next) {
+      tmp = head->data;
+      head->clear();
+      head = nullptr;
+      list<T>::size--;
+      return tmp;
+    }
+    std::shared_ptr<node> cursor = head;
+    while (cursor->next->next != nullptr) {
+      cursor = cursor->next;
+    }
+    auto prev = cursor->next;
+    tmp = prev->list<T>::baseNode::data;
+    prev->clear();
+    cursor->next = nullptr;
+    list<T>::size--;
+  } else {
+    throw std::range_error("List empty");
   }
-  auto prev = cursor->next;
-  T tmp = prev->list<T>::baseNode::data;
-  prev->clear();
-  cursor->next = nullptr;
-  list<T>::size--;
 
   return tmp;
 }
@@ -202,7 +234,7 @@ template <typename T> void single_list<T>::unshift(const T &value) {
 // Удалить из начала
 template <typename T> T single_list<T>::shift() {
   if (!head) {
-    throw std::runtime_error("List empty\n");
+    throw std::range_error("List empty\n");
   }
   T head_data = head->list<T>::baseNode::data;
   std::shared_ptr<node> tmp = head;
@@ -213,7 +245,68 @@ template <typename T> T single_list<T>::shift() {
 }
 
 // Сортировка
-template <typename T> void single_list<T>::sort() {}
+
+// Слияние двух списков
+template <typename T>
+std::shared_ptr<typename single_list<T>::node>
+single_list<T>::merge(single_list<T> &left, single_list<T> &right) {
+  single_list<T> result;
+  std::shared_ptr<node> left_cursor = left.head;
+  std::shared_ptr<node> right_cursor = right.head;
+  std::shared_ptr<node> *result_cursor = &result.head;
+  while (left_cursor && right_cursor) {
+    if (left_cursor->data <= right_cursor->data) {
+      *result_cursor = left_cursor;
+      left_cursor = left_cursor->next;
+    } else {
+      *result_cursor = right_cursor;
+      right_cursor = right_cursor->next;
+    }
+    result_cursor = &((*result_cursor)->next);
+  }
+  // *result_cursor = (left_cursor) ? left_cursor : right_cursor;
+  left.head = nullptr;
+  right.head = nullptr;
+  return result.head;
+}
+
+// Поиск середины по методу быстрого-медленного указателя
+template <typename T>
+std::shared_ptr<typename single_list<T>::node>
+single_list<T>::getMiddle(std::shared_ptr<typename single_list<T>::node> head) {
+  if (!head) {
+    return head;
+  }
+
+  std::shared_ptr<node> slow = head;
+  std::shared_ptr<node> fast = head->next;
+
+  while (fast && fast->next) {
+    slow = slow->next;
+    fast = fast->next->next;
+  }
+
+  return slow;
+}
+
+template <typename T> void single_list<T>::sort() {
+
+  if (!head || !head->next) {
+    return;
+  }
+
+  std::shared_ptr<node> mid = getMiddle(head);
+  std::shared_ptr<node> middleNext = mid->next;
+  mid->next = nullptr;
+
+  single_list<T> left{head};
+  single_list<T> right{middleNext};
+
+  left.sort();
+  right.sort();
+
+  this->head = merge(left, right);
+}
 
 // Геттер
 template <typename T> t_size single_list<T>::getSize() const {
@@ -238,6 +331,7 @@ template <typename T> void single_list<T>::clear() {
     }
   }
   head = nullptr;
+  this->size = 0;
 }
 
 // Итератор односвязного списка
@@ -279,7 +373,10 @@ typename single_list<T>::Iterator single_list<T>::Iterator::operator++(int) {
 // Доступ к итератору
 template <typename T>
 typename single_list<T>::Iterator single_list<T>::begin() const {
-  return Iterator(head.get());
+  if (head) {
+    return Iterator(head.get());
+  }
+  return Iterator(nullptr);
 }
 
 template <typename T>
