@@ -1,6 +1,5 @@
 #pragma once
 // список любых значений, XOR-список, список с пропусками,
-#include <cmath>
 #include <cstddef>
 #include <initializer_list>
 #include <iterator>

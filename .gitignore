@@ -1,3 +1,2 @@
 main
-main_any
-main_dynamic
+main_*
