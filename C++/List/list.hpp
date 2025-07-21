@@ -1,6 +1,7 @@
 #pragma once
-// список любых значений, XOR-список, список с пропусками,
+// список любых значений, XOR-список, список с пропусками
 #include <cstddef>
+#include <ctime>
 #include <initializer_list>
 #include <iterator>
 #include <memory>
@@ -63,10 +64,11 @@ template <typename T> class single_list : public list<T> {
     pointer m_ptr;
   };
 
+  std::shared_ptr<node> head;
+
 protected:
   std::shared_ptr<node> merge(single_list<T> &left, single_list<T> &right);
   std::shared_ptr<node> getMiddle(std::shared_ptr<node>);
-  std::shared_ptr<node> head;
 
 public:
   // Конструкторы
@@ -100,6 +102,7 @@ template <typename T> class double_list : public single_list<T> {
   struct node : list<T>::baseNode {
     std::shared_ptr<node> next;
     std::shared_ptr<node> prev;
+    void clear() override;
     node(const T &);
   };
 
@@ -108,8 +111,8 @@ template <typename T> class double_list : public single_list<T> {
     using iterator_category = std::bidirectional_iterator_tag; // Тип итератора
     using difference_type = std::ptrdiff_t;                    // Шаг итерации
     using value_type = T;                                      // Тип итерации
-    using pointer = node *; // Указатель над итератором
-    using reference = T &;  // Ссылка на тип
+    using pointer = double_list<T>::node *; // Указатель над итератором
+    using reference = T &;                  // Ссылка на тип
     Iterator(pointer);
     reference operator*() const; // Получить значение итератора
     pointer operator->();        // Получить Указатель на тип
@@ -133,7 +136,8 @@ template <typename T> class double_list : public single_list<T> {
     pointer m_ptr;
   };
 
-  std::shared_ptr<node> tail;
+  std::shared_ptr<double_list<T>::node> head;
+  std::shared_ptr<double_list<T>::node> tail;
 
 public:
   // Конструкторы
@@ -453,10 +457,18 @@ template <typename T>
 double_list<T>::node::node(const T &value) : next(nullptr), prev(nullptr) {
   this->data = value;
 }
+
+template <typename T> void double_list<T>::node::clear() {
+  this->next = nullptr;
+  this->prev = nullptr;
+  this->data = T{};
+}
+
 // Конструкторы
 template <typename T>
-double_list<T>::double_list()
-    : single_list<T>::head(nullptr), tail(nullptr), single_list<T>::size(0) {}
+double_list<T>::double_list() : head(nullptr), tail(nullptr) {
+  this->size = 0;
+}
 
 template <typename T>
 double_list<T>::double_list(std::shared_ptr<node> head)
@@ -549,8 +561,10 @@ template <typename T> void double_list<T>::push(const T &value) {
 template <typename T> T double_list<T>::pop() {
   std::shared_ptr<node> tmp = this->tail;
   this->tail = this->tail->prev;
+  T data = tmp->data;
   tmp->clear();
   this->size--;
+  return data;
 }
 
 template <typename T> void double_list<T>::unshift(const T &value) {
@@ -568,9 +582,11 @@ template <typename T> void double_list<T>::unshift(const T &value) {
 
 template <typename T> T double_list<T>::shift() {
   std::shared_ptr<node> tmp = this->head;
+  T data = tmp->data;
   this->head = this->head->next;
   tmp->clear();
   this->size--;
+  return data;
 }
 
 // Вспомогательные методы
