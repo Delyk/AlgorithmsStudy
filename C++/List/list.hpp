@@ -20,14 +20,14 @@ protected:
 
 public:
   virtual ~list() = default;
-  virtual void push(const T &) = 0;    // Вставить в конец списка
-  virtual T pop() = 0;                 // Убрать из конца списка
+  virtual void push(const T &) = 0; // Вставить в конец списка
+  virtual T pop() = 0;              // Убрать из конца списка
   virtual void unshift(const T &) = 0; // Вставить в начало списка
-  virtual T shift() = 0;               // Убрать из начала списка
-  virtual void sort() = 0;             // Сортировать список
-  virtual t_size getSize() const = 0;  // Получить размер списка
-  virtual bool empty() const = 0;      // Проверка на пустоту
-  virtual void clear() = 0;            // Очистить список
+  virtual T shift() = 0;   // Убрать из начала списка
+  virtual void sort() = 0; // Сортировать список
+  virtual t_size getSize() const = 0; // Получить размер списка
+  virtual bool empty() const = 0;     // Проверка на пустоту
+  virtual void clear() = 0;           // Очистить список
 };
 
 template <typename T> class single_list : public list<T> {
@@ -41,13 +41,13 @@ template <typename T> class single_list : public list<T> {
   struct Iterator {
     // Теги для алгоритмов
     using iterator_category = std::forward_iterator_tag; // Тип итератора
-    using difference_type = std::ptrdiff_t;              // Шаг итерации
-    using value_type = T;                                // Тип итерации
+    using difference_type = std::ptrdiff_t; // Шаг итерации
+    using value_type = T;                   // Тип итерации
     using pointer = node *; // Указатель над итератором
     using reference = T &;  // Ссылка на тип
     Iterator(pointer);
     reference operator*() const; // Получить значение итератора
-    pointer operator->();        // Получить Указатель на тип
+    pointer operator->(); // Получить Указатель на тип
     // Инкременты
     Iterator &operator++();   // Префиксный
     Iterator operator++(int); // Постфиксный
@@ -109,13 +109,13 @@ template <typename T> class double_list : public single_list<T> {
   struct Iterator {
     // Теги для алгоритмов
     using iterator_category = std::bidirectional_iterator_tag; // Тип итератора
-    using difference_type = std::ptrdiff_t;                    // Шаг итерации
-    using value_type = T;                                      // Тип итерации
+    using difference_type = std::ptrdiff_t; // Шаг итерации
+    using value_type = T;                   // Тип итерации
     using pointer = double_list<T>::node *; // Указатель над итератором
     using reference = T &;                  // Ссылка на тип
     Iterator(pointer);
     reference operator*() const; // Получить значение итератора
-    pointer operator->();        // Получить Указатель на тип
+    pointer operator->(); // Получить Указатель на тип
     // Инкременты
     Iterator &operator++();   // Префиксный
     Iterator operator++(int); // Постфиксный
@@ -145,11 +145,11 @@ public:
   double_list(const T &);
   double_list(std::shared_ptr<node>);
   double_list(const double_list &);
-  double_list(const double_list &&) noexcept;
+  double_list(double_list &&) noexcept;
   double_list(std::initializer_list<T>);
   // Присваивание
   double_list<T> &operator=(const double_list<T> &);
-  double_list<T> &operator=(const double_list<T> &&) noexcept;
+  double_list<T> &operator=(double_list<T> &&) noexcept;
   double_list<T> &operator=(std::initializer_list<T>);
   // Добавление/удаление элементов
   void push(const T &) override;
@@ -495,7 +495,7 @@ template <typename T> double_list<T>::double_list(const double_list<T> &right) {
 }
 
 template <typename T>
-double_list<T>::double_list(const double_list<T> &&right) noexcept {
+double_list<T>::double_list(double_list<T> &&right) noexcept {
   for (auto i : right) {
     this->push(i);
   }
@@ -523,8 +523,7 @@ double_list<T> &double_list<T>::operator=(const double_list<T> &right) {
 }
 
 template <typename T>
-double_list<T> &
-double_list<T>::operator=(const double_list<T> &&right) noexcept {
+double_list<T> &double_list<T>::operator=(double_list<T> &&right) noexcept {
   this->clear();
   for (auto i : right) {
     this->push(i);
@@ -547,6 +546,7 @@ double_list<T> &double_list<T>::operator=(std::initializer_list<T> list) {
 // Добавление/удаление
 template <typename T> void double_list<T>::push(const T &value) {
   std::shared_ptr<node> new_node = std::make_shared<node>(value);
+  this->size++;
   if (!this->head && !this->tail) {
     this->head = new_node;
     this->tail = new_node;
@@ -555,12 +555,14 @@ template <typename T> void double_list<T>::push(const T &value) {
   new_node->prev = this->tail;
   this->tail->next = new_node;
   this->tail = new_node;
-  this->size++;
 }
 
 template <typename T> T double_list<T>::pop() {
   std::shared_ptr<node> tmp = this->tail;
   this->tail = this->tail->prev;
+  if (!this->tail) {
+    this->head = nullptr;
+  }
   T data = tmp->data;
   tmp->clear();
   this->size--;
@@ -569,6 +571,7 @@ template <typename T> T double_list<T>::pop() {
 
 template <typename T> void double_list<T>::unshift(const T &value) {
   std::shared_ptr<node> new_node = std::make_shared<node>(value);
+  this->size++;
   if (!this->head && !this->tail) {
     this->head = new_node;
     this->tail = new_node;
@@ -577,13 +580,15 @@ template <typename T> void double_list<T>::unshift(const T &value) {
   new_node->next = this->head;
   this->head->prev = new_node;
   this->head = new_node;
-  this->size++;
 }
 
 template <typename T> T double_list<T>::shift() {
   std::shared_ptr<node> tmp = this->head;
   T data = tmp->data;
   this->head = this->head->next;
+  if (!this->head) {
+    this->tail = nullptr;
+  }
   tmp->clear();
   this->size--;
   return data;
@@ -611,6 +616,9 @@ template <typename T> void double_list<T>::clear() {
     cursor->clear();
     cursor = next;
   }
+  this->head = nullptr;
+  this->tail = nullptr;
+  this->size = 0;
 }
 
 // Итератор двусвязного списка
