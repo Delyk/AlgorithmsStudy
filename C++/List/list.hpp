@@ -98,7 +98,7 @@ public:
 };
 
 // Двусвязный список
-template <typename T> class double_list : public single_list<T> {
+template <typename T> class double_list : public list<T> {
   struct node : list<T>::baseNode {
     std::shared_ptr<node> next;
     std::shared_ptr<node> prev;
@@ -138,6 +138,8 @@ template <typename T> class double_list : public single_list<T> {
 
   std::shared_ptr<double_list<T>::node> head;
   std::shared_ptr<double_list<T>::node> tail;
+  std::shared_ptr<node> getMiddle(std::shared_ptr<node>);
+  std::shared_ptr<node> merge(double_list<T> &, double_list<T> &);
 
 public:
   // Конструкторы
@@ -160,6 +162,7 @@ public:
   void sort() override;
   bool empty() const override;
   void clear() override;
+  t_size getSize() const override;
   // Методы доступа к итератору
   Iterator begin() const;
   Iterator end() const;
@@ -317,6 +320,18 @@ template <typename T> T single_list<T>::shift() {
 // Сортировка
 
 // Слияние двух списков
+/*
+ * Параметры:
+ * - left  — первый отсортированный список,
+ * - right — второй отсортированный список.
+ * 1. Создается пустой результирующий список `result`.
+ * 2. Заведены два указателя (`left_cursor` и `right_cursor`), которые проходят
+ * по элементам списков left и right соответственно.
+ * 3. Пока есть элементы и в левом, и в правом списках:
+ *    - Сравниваем текущие элементы.
+ *    - Добавляем меньший элемент в конец результирующего списка, передвигаем
+ * соответствующий курсор вперёд.
+ */
 template <typename T>
 std::shared_ptr<typename single_list<T>::node>
 single_list<T>::merge(single_list<T> &left, single_list<T> &right) {
@@ -337,7 +352,13 @@ single_list<T>::merge(single_list<T> &left, single_list<T> &right) {
   return result.head;
 }
 
-// Поиск середины по методу быстрого-медленного указателя
+/* Поиск середины
+ * Один указатель перемещается вперёд на 1 элемент
+ * Второй указатель перепрыгивает через один и перещается на 2 элемента вперёд
+ *за шаг Таким образом, когда "быстрый" указатель дойдёт до конца списка -
+ *"медленный" указатель будет только на середине потому что он в 2 раза
+ *медленнее
+ */
 template <typename T>
 std::shared_ptr<typename single_list<T>::node>
 single_list<T>::getMiddle(std::shared_ptr<typename single_list<T>::node> head) {
@@ -356,6 +377,23 @@ single_list<T>::getMiddle(std::shared_ptr<typename single_list<T>::node> head) {
   return slow;
 }
 
+/*
+ * Сортировка списка методом "разделяй и властвуй" (merge sort).
+ * 1. Если список пустой или содержит один элемент, он уже отсортирован — выход
+ * из функции.
+ * 2. Ищется середина списка (узел середины).
+ * 3. Список разбивается на два подсписка:
+ *    - левый — от головы до середины,
+ *    - правый — от узла после середины до конца.
+ * 4. Рекурсивно сортируются левый и правый подсписки.
+ * 5. Отсортированные подсписки объединяются в один отсортированный список с
+ * помощью функции merge().
+ *
+ * Таким образом, список рекурсивно разбивается на всё меньшие части,
+ * пока не останутся списки с одним элементом,
+ * затем происходит их последовательное слияние с сортировкой,
+ * разворачивая рекурсию и формируя итоговый отсортированный список.
+ */
 template <typename T> void single_list<T>::sort() {
 
   if (!head || !head->next) {
@@ -472,13 +510,17 @@ double_list<T>::double_list() : head(nullptr), tail(nullptr) {
 
 template <typename T>
 double_list<T>::double_list(std::shared_ptr<node> head)
-    : single_list<T>::head(head), tail(nullptr) {
+    : head(head), tail(nullptr) {
+  this->size = 0;
   auto cursor = head;
+  std::shared_ptr<node> prev_node = nullptr;
   while (cursor != nullptr) {
     this->size++;
-    this->tail = cursor;
+    cursor->prev = prev_node;
+    prev_node = cursor;
     cursor = cursor->next;
   }
+  this->tail = prev_node;
 }
 
 template <typename T> double_list<T>::double_list(const T &value) {
@@ -595,18 +637,75 @@ template <typename T> T double_list<T>::shift() {
 }
 
 // Вспомогательные методы
-template <typename T> void double_list<T>::sort() {
-  this->single_list<T>::sort();
-  auto cursor = this->head;
-  while (cursor) {
-    cursor->prev = this->tail;
-    this->tail = cursor;
-    cursor = cursor->next;
+// Сортировка
+// Слияние двух списков
+template <typename T>
+std::shared_ptr<typename double_list<T>::node>
+double_list<T>::merge(double_list<T> &left, double_list<T> &right) {
+  double_list<T> result;
+  std::shared_ptr<node> left_cursor = left.head;
+  std::shared_ptr<node> right_cursor = right.head;
+  std::shared_ptr<node> *result_cursor = &result.head;
+  while (left_cursor && right_cursor) {
+    if (left_cursor->data <= right_cursor->data) {
+      *result_cursor = left_cursor;
+      left_cursor = left_cursor->next;
+    } else {
+      *result_cursor = right_cursor;
+      right_cursor = right_cursor->next;
+    }
+    result_cursor = &((*result_cursor)->next);
   }
+  return result.head;
 }
+
+// Поиск середины по методу быстрого-медленного указателя
+template <typename T>
+std::shared_ptr<typename double_list<T>::node>
+double_list<T>::getMiddle(std::shared_ptr<typename double_list<T>::node> head) {
+  if (!head) {
+    return head;
+  }
+
+  std::shared_ptr<node> slow = head;
+  std::shared_ptr<node> fast = head->next;
+
+  while (fast && fast->next) {
+    slow = slow->next;
+    fast = fast->next->next;
+  }
+
+  return slow;
+}
+
+template <typename T> void double_list<T>::sort() {
+
+  if (!head || !head->next) {
+    return;
+  }
+
+  std::shared_ptr<node> mid = getMiddle(head);
+  std::shared_ptr<node> middleNext = mid->next;
+  mid->next = nullptr;
+  mid->prev = nullptr;
+
+  double_list<T> left{head};
+  double_list<T> right{middleNext};
+
+  left.sort();
+  right.sort();
+
+  this->head = merge(left, right);
+}
+
 template <typename T> bool double_list<T>::empty() const {
   return !this->head && !this->tail;
 }
+
+template <typename T> t_size double_list<T>::getSize() const {
+  return this->size;
+}
+
 template <typename T> void double_list<T>::clear() {
   std::shared_ptr<node> cursor = this->head;
   std::shared_ptr<node> next = this->head;

@@ -1,6 +1,5 @@
 #include "list.hpp"
 #include "gtest/gtest.h"
-#include <algorithm>
 #include <gtest/gtest.h>
 using namespace list;
 
