@@ -1,5 +1,6 @@
 #include "list.hpp"
 #include "gtest/gtest.h"
+#include <algorithm>
 #include <gtest/gtest.h>
 using namespace list;
 
@@ -53,6 +54,11 @@ TEST(ConstructorTest, ListConstructor) {
   for (auto i : list) {
     EXPECT_EQ(control[j++], i);
   }
+
+  for (auto it = list.end(); it != list.begin(); it--) {
+    std::cout << *it << std::endl;
+  }
+  std::cout << *list.begin() << std::endl;
 }
 
 // Присваивание списка
@@ -164,7 +170,23 @@ TEST(SortTest, SortSingleElement) {
 }
 
 //Сортировка
-TEST(SortTest, SortBasic) {
+TEST(SortTest, SortBasic1) {
+  int control[]{1, 2, 3};
+  double_list<int> list{2, 1, 3};
+  list.sort();
+  EXPECT_EQ(list.getSize(), 3);
+  int i = 0;
+  for (auto j : list) {
+    EXPECT_EQ(control[i++], j);
+  }
+
+  for (auto it = list.end(); it != list.begin(); it--) {
+    EXPECT_EQ(control[i--], *it);
+  }
+  EXPECT_EQ(control[0], *list.begin());
+}
+
+TEST(SortTest, SortBasic2) {
   int control[]{-2, -1, 0, 1, 2, 3, 4, 5};
   double_list<int> list{5, 1, -2, 3, 4, 0, -1, 2};
   list.sort();
@@ -173,59 +195,72 @@ TEST(SortTest, SortBasic) {
   for (auto j : list) {
     EXPECT_EQ(control[i++], j);
   }
+  for (auto it = list.end(); it != list.begin(); it--) {
+    EXPECT_EQ(control[i--], *it);
+  }
+  EXPECT_EQ(control[0], *list.begin());
 }
 
 // Уже отсортировано
 TEST(SortTest, SortAlreadySorted) {
   int control[] = {1, 2, 3, 4, 5};
-  double_list<int> sortedList{1, 2, 3, 4, 5};
-  sortedList.sort();
+  double_list<int> list{1, 2, 3, 4, 5};
+  list.sort();
 
   int i = 0;
-  for (auto val : sortedList) {
+  for (auto val : list) {
     EXPECT_EQ(val, control[i++]);
   }
+  for (auto it = list.end(); it != list.begin(); it--) {
+    EXPECT_EQ(control[i--], *it);
+  }
+  EXPECT_EQ(control[0], *list.begin());
 }
 
 // Одинаковые элементы
 TEST(SortTest, SortAllEqual) {
   int control[]{7, 7, 7, 7};
-  double_list<int> equalList{7, 7, 7, 7};
-  equalList.sort();
+  double_list<int> list{7, 7, 7, 7};
+  list.sort();
 
   int i = 0;
-  for (auto j : equalList) {
+  for (auto j : list) {
     EXPECT_EQ(control[i], j);
     i++;
   }
+  for (auto it = list.end(); it != list.begin(); it--) {
+    EXPECT_EQ(control[i--], *it);
+  }
+  EXPECT_EQ(control[0], *list.begin());
 }
 
 //Тест производительности сортировки
-// TEST(SortTest, SortLargeList) {
-//   const int N = 10000;
-//   double_list<int> bigList;
-//   std::vector<int> vec;
-//
-//   for (int i = N; i > 0; --i) {
-//     bigList.push(i);
-//     vec.push_back(i);
-//   }
-//
-//   bigList.sort();
-//   std::sort(vec.begin(), vec.end());
-//
-//   int i = 0;
-//   for (auto val : bigList) {
-//     EXPECT_EQ(val, vec[i++]);
-//   }
-//
-//   auto vec_it = vec.rbegin();
-//   auto list_it = bigList.end();
-//   for (; vec_it != vec.rend() && list_it != bigList.end();
-//        vec_it++, list_it--) {
-//     EXPECT_EQ(*vec_it, *list_it);
-//   }
-// }
+TEST(SortTest, SortLargeList) {
+  const int N = 10000;
+  double_list<int> bigList;
+  std::vector<int> vec;
+
+  for (int i = N; i > 0; --i) {
+    bigList.push(i);
+    vec.push_back(i);
+  }
+
+  bigList.sort();
+  std::sort(vec.begin(), vec.end());
+
+  int i = 0;
+  for (auto val : bigList) {
+    EXPECT_EQ(val, vec[i++]);
+  }
+
+  auto vec_it = vec.rbegin();
+  auto list_it = bigList.end();
+  for (; vec_it != vec.rend() && list_it != bigList.end();
+       vec_it++, list_it--) {
+    EXPECT_EQ(*vec_it, *list_it);
+  }
+  EXPECT_EQ(*vec.begin(), *bigList.begin());
+}
 
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);

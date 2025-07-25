@@ -646,6 +646,7 @@ double_list<T>::merge(double_list<T> &left, double_list<T> &right) {
   std::shared_ptr<node> left_cursor = left.head;
   std::shared_ptr<node> right_cursor = right.head;
   std::shared_ptr<node> *result_cursor = &result.head;
+  std::shared_ptr<node> prev_cursor = nullptr;
   while (left_cursor && right_cursor) {
     if (left_cursor->data <= right_cursor->data) {
       *result_cursor = left_cursor;
@@ -654,12 +655,34 @@ double_list<T>::merge(double_list<T> &left, double_list<T> &right) {
       *result_cursor = right_cursor;
       right_cursor = right_cursor->next;
     }
+    (*result_cursor)->prev = prev_cursor;
+    prev_cursor = *result_cursor;
     result_cursor = &((*result_cursor)->next);
+  }
+
+  if (left_cursor) {
+    while (left_cursor) {
+      *result_cursor = left_cursor;
+      left_cursor = left_cursor->next;
+      (*result_cursor)->prev = prev_cursor;
+      prev_cursor = *result_cursor;
+      result_cursor = &((*result_cursor)->next);
+    }
+  }
+
+  if (right_cursor) {
+    while (right_cursor) {
+      *result_cursor = right_cursor;
+      right_cursor = right_cursor->next;
+      (*result_cursor)->prev = prev_cursor;
+      prev_cursor = *result_cursor;
+      result_cursor = &((*result_cursor)->next);
+    }
   }
   return result.head;
 }
 
-// Поиск середины по методу быстрого-медленного указателя
+// Поиск середины
 template <typename T>
 std::shared_ptr<typename double_list<T>::node>
 double_list<T>::getMiddle(std::shared_ptr<typename double_list<T>::node> head) {
