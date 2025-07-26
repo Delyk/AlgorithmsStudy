@@ -1,7 +1,6 @@
 #pragma once
 // список любых значений, XOR-список, список с пропусками
 #include <cstddef>
-#include <ctime>
 #include <initializer_list>
 #include <iterator>
 #include <memory>
@@ -20,14 +19,14 @@ protected:
 
 public:
   virtual ~list() = default;
-  virtual void push(const T &) = 0; // Вставить в конец списка
-  virtual T pop() = 0;              // Убрать из конца списка
+  virtual void push(const T &) = 0;    // Вставить в конец списка
+  virtual T pop() = 0;                 // Убрать из конца списка
   virtual void unshift(const T &) = 0; // Вставить в начало списка
-  virtual T shift() = 0;   // Убрать из начала списка
-  virtual void sort() = 0; // Сортировать список
-  virtual t_size getSize() const = 0; // Получить размер списка
-  virtual bool empty() const = 0;     // Проверка на пустоту
-  virtual void clear() = 0;           // Очистить список
+  virtual T shift() = 0;               // Убрать из начала списка
+  virtual void sort() = 0;             // Сортировать список
+  virtual t_size getSize() const = 0;  // Получить размер списка
+  virtual bool empty() const = 0;      // Проверка на пустоту
+  virtual void clear() = 0;            // Очистить список
 };
 
 template <typename T> class single_list : public list<T> {
@@ -41,13 +40,13 @@ template <typename T> class single_list : public list<T> {
   struct Iterator {
     // Теги для алгоритмов
     using iterator_category = std::forward_iterator_tag; // Тип итератора
-    using difference_type = std::ptrdiff_t; // Шаг итерации
-    using value_type = T;                   // Тип итерации
+    using difference_type = std::ptrdiff_t;              // Шаг итерации
+    using value_type = T;                                // Тип итерации
     using pointer = node *; // Указатель над итератором
     using reference = T &;  // Ссылка на тип
     Iterator(pointer);
     reference operator*() const; // Получить значение итератора
-    pointer operator->(); // Получить Указатель на тип
+    pointer operator->();        // Получить Указатель на тип
     // Инкременты
     Iterator &operator++();   // Префиксный
     Iterator operator++(int); // Постфиксный
@@ -109,13 +108,13 @@ template <typename T> class double_list : public list<T> {
   struct Iterator {
     // Теги для алгоритмов
     using iterator_category = std::bidirectional_iterator_tag; // Тип итератора
-    using difference_type = std::ptrdiff_t; // Шаг итерации
-    using value_type = T;                   // Тип итерации
+    using difference_type = std::ptrdiff_t;                    // Шаг итерации
+    using value_type = T;                                      // Тип итерации
     using pointer = double_list<T>::node *; // Указатель над итератором
     using reference = T &;                  // Ссылка на тип
     Iterator(pointer);
     reference operator*() const; // Получить значение итератора
-    pointer operator->(); // Получить Указатель на тип
+    pointer operator->();        // Получить Указатель на тип
     // Инкременты
     Iterator &operator++();   // Префиксный
     Iterator operator++(int); // Постфиксный
