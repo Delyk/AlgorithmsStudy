@@ -19,8 +19,8 @@ class universal {
     T data;
 
   public:
-    element(const T &value) : data(value) {}       // Базовый конструктор
-    element(T &&value) : data(std::move(value)) {} // Move-конструктор
+    element(const T &value) : data(value) {} // Базовый конструктор
+    element(T &&value) noexcept : data(std::move(value)) {} // Move-конструктор
     elementBase *clone() const override { return new element<T>(*this); }
     const std::type_info &type() const override {
       return typeid(T);
@@ -92,16 +92,16 @@ template <typename T> class array {
   void resize();
 
 public:
-  explicit array(t_size size = 0);                 // Конструктор
-  array(std::initializer_list<T> init);            // Конструктор для списка
-  ~array();                                        // Деструктор
-  array(const array &);                            // Конструктор копирования
-  array &operator=(const array &);                 // Оператор присваивания
+  explicit array(t_size size = 0);      // Конструктор
+  array(std::initializer_list<T> init); // Конструктор для списка
+  ~array();                             // Деструктор
+  array(const array &); // Конструктор копирования
+  array &operator=(const array &); // Оператор присваивания
   array &operator=(std::initializer_list<T> init); // Присваивание со списком
   T &operator[](t_size index); // Перегрузка оператора индексирования
   const T &operator[](
-      t_size index) const;  // Перегрузка оператора индексирования для констант
-  array(array &&) noexcept; // Move-конструктор
+      t_size index) const; // Перегрузка оператора индексирования для констант
+  array(array &&) noexcept;            // Move-конструктор
   array &operator=(array &&) noexcept; // Move-присваивание
   t_size getSize() const;              // Геттеры
   t_size getCapacity() const;

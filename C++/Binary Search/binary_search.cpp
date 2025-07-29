@@ -1,5 +1,4 @@
 #include "binary_search.h"
-#include <algorithm>
 #include <vector>
 
 int binary_search(const std::vector<int> &array, int item) {
