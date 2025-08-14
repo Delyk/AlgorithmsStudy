@@ -31,4 +31,7 @@ void SelectionSort(BidirectIt first, BidirectIt last,
   }
 }
 
+/*
+ * Быстрая сортировка
+ */
 } // namespace sort
