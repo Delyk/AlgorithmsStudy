@@ -34,4 +34,43 @@ void SelectionSort(BidirectIt first, BidirectIt last,
 /*
  * Быстрая сортировка
  */
+
+template <typename RandomIt,
+          typename Compare =
+              std::less<typename std::iterator_traits<RandomIt>::value_type>>
+static RandomIt Partition(RandomIt first, RandomIt last,
+                          Compare comp = Compare()) {
+  auto pivot = first + (last - first) / 2;
+  auto value = *pivot;
+  //Перемещаем pivot в конец для удобства
+  std::iter_swap(pivot, last - 1);
+  auto index = first;
+
+  //Перемещаем элементы меньше pivot в начало
+  for (auto it = first; it < last - 1; it++) {
+    if (comp(*it, value)) {
+      std::iter_swap(it, index);
+      index++;
+    }
+  }
+
+  //Элементы больше или равные опорному автоматически будут в конце
+  //Возвращаем pivot
+  std::iter_swap(index, last - 1);
+  return index;
+}
+
+template <typename RandomIt,
+          typename Compare =
+              std::less<typename std::iterator_traits<RandomIt>::value_type>>
+void QuickSort(RandomIt first, RandomIt last, Compare comp = Compare()) {
+  //Базовый случай один или два элемента
+  if (last - first <= 1)
+    return;
+  //Раздеяем элементы, возвращаем опорный
+  auto pivot = Partition(first, last, comp);
+  //Сортируем разделённые подмассивы
+  QuickSort(first, pivot, comp);
+  QuickSort(pivot + 1, last, comp);
+}
 } // namespace sort

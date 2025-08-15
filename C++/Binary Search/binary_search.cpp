@@ -100,7 +100,7 @@ int binary_search_count(const std::vector<int> &array, int item) {
   int left = binary_search_left(array, item);
   int right = binary_search_right(array, item);
 
-  if ((left == -1) && (right == -1))
+  if ((left == -1) || (right == -1))
     return -1;
   return right - left + 1;
 }
