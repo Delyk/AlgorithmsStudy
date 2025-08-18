@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iterator>
 #include <map>
+#include <vector>
 
 namespace sort {
 
@@ -42,11 +43,11 @@ static RandomIt Partition(RandomIt first, RandomIt last,
                           Compare comp = Compare()) {
   auto pivot = first + (last - first) / 2;
   auto value = *pivot;
-  //Перемещаем pivot в конец для удобства
+  // Перемещаем pivot в конец для удобства
   std::iter_swap(pivot, last - 1);
   auto index = first;
 
-  //Перемещаем элементы меньше pivot в начало
+  // Перемещаем элементы меньше pivot в начало
   for (auto it = first; it < last - 1; it++) {
     if (comp(*it, value)) {
       std::iter_swap(it, index);
@@ -54,8 +55,8 @@ static RandomIt Partition(RandomIt first, RandomIt last,
     }
   }
 
-  //Элементы больше или равные опорному автоматически будут в конце
-  //Возвращаем pivot
+  // Элементы больше или равные опорному автоматически будут в конце
+  // Возвращаем pivot
   std::iter_swap(index, last - 1);
   return index;
 }
@@ -64,13 +65,68 @@ template <typename RandomIt,
           typename Compare =
               std::less<typename std::iterator_traits<RandomIt>::value_type>>
 void QuickSort(RandomIt first, RandomIt last, Compare comp = Compare()) {
-  //Базовый случай один или два элемента
+  // Базовый случай один или два элемента
   if (last - first <= 1)
     return;
-  //Раздеяем элементы, возвращаем опорный
+  // Раздеяем элементы, возвращаем опорный
   auto pivot = Partition(first, last, comp);
-  //Сортируем разделённые подмассивы
+  // Сортируем разделённые подмассивы
   QuickSort(first, pivot, comp);
   QuickSort(pivot + 1, last, comp);
 }
+
+/*
+ * Сортировка слиянием
+ */
+template <typename RandomIt,
+          typename Compare =
+              std::less<typename std::iterator_traits<RandomIt>::value_type>>
+static void Merge(RandomIt first, RandomIt mid, RandomIt last,
+                  Compare comp = Compare()) {
+  if (first == mid || last == mid) {
+    return;
+  }
+  using ValueType = typename std::iterator_traits<RandomIt>::value_type;
+  std::vector<ValueType> tmp;
+
+  RandomIt left = first;
+  RandomIt right = mid;
+  while (left != mid && right != last) { // Проходим по половинам массива
+    if (comp(*left, *right)) { // Добавляем в массив меньший из двух элементов
+      tmp.push_back(*left);
+      left++;
+    } else {
+      tmp.push_back(*right);
+      right++;
+    }
+  }
+
+  // Копируем оставшиеся элементы
+  while (left != mid) {
+    tmp.push_back(*left);
+    left++;
+  }
+  while (right != last) {
+    tmp.push_back(*right);
+    right++;
+  }
+  // Перемещаем полученный массив в исходную последовательность
+  std::move(tmp.begin(), tmp.end(), first);
+}
+
+template <typename RandomIt,
+          typename Compare =
+              std::less<typename std::iterator_traits<RandomIt>::value_type>>
+void MergeSort(RandomIt first, RandomIt last, Compare comp = Compare()) {
+  if (last - first <= 1) {
+    return;
+  }
+  RandomIt mid = first + (last - first) / 2;
+
+  MergeSort(first, mid, comp);
+  MergeSort(mid, last, comp);
+
+  Merge(first, mid, last, comp);
+}
+
 } // namespace sort

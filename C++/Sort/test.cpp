@@ -30,7 +30,7 @@ struct SelectionSortWrapper {
     SelectionSort(first, last, comp);
   }
   static void totalTime() {
-    std::cout << "SelectionSort (avg): " << std::fixed << std::setprecision(1)
+    std::cout << "SelectionSort (avg): " << std::fixed << std::setprecision(2)
               << total_ms.count() / TEST_COUNT << " ms" << std::endl;
   }
 };
@@ -41,15 +41,27 @@ struct QuickSortWrapper {
     QuickSort(first, last, comp);
   }
   static void totalTime() {
-    std::cout << "QuickSort (avg): " << std::fixed << std::setprecision(1)
+    std::cout << "QuickSort (avg): " << std::fixed << std::setprecision(2)
+              << total_ms.count() / TEST_COUNT << " ms" << std::endl;
+  }
+};
+struct MergeSortWrapper {
+  static std::chrono::duration<double, std::milli> total_ms;
+  template <TEMPLATE_PARAMS_RANDOM> void operator()(SORT_PARAMS_RANDOM) const {
+    MergeSort(first, last, comp);
+  }
+  static void totalTime() {
+    std::cout << "MergeSort (avg): " << std::fixed << std::setprecision(2)
               << total_ms.count() / TEST_COUNT << " ms" << std::endl;
   }
 };
 std::chrono::duration<double, std::milli> SelectionSortWrapper::total_ms{0};
 std::chrono::duration<double, std::milli> QuickSortWrapper::total_ms{0};
+std::chrono::duration<double, std::milli> MergeSortWrapper::total_ms{0};
 
 // Список алгоритмов сортировки
-using SortAlgorithms = ::testing::Types<SelectionSortWrapper, QuickSortWrapper>;
+using SortAlgorithms =
+    ::testing::Types<SelectionSortWrapper, QuickSortWrapper, MergeSortWrapper>;
 
 // Функция проверки сортировки
 template <typename Sorter, typename Container, typename Compare = std::less<>>
@@ -83,22 +95,22 @@ public:
   Sorter sorter;
 
   static int random(int start, int end) {
-    std::random_device rd;  // Устройство случайности
-    std::mt19937 gen(rd()); // Генератор
+    std::random_device rd;                            // Устройство случайности
+    std::mt19937 gen(rd());                           // Генератор
     std::uniform_int_distribution<> dist(start, end); // Диапазон распределения
     return dist(gen);
   }
 
   static double random(double start, double end) {
-    std::random_device rd;  // Устройство случайности
-    std::mt19937 gen(rd()); // Генератор
+    std::random_device rd;                             // Устройство случайности
+    std::mt19937 gen(rd());                            // Генератор
     std::uniform_real_distribution<> dist(start, end); // Диапазон распределения
     return dist(gen);
   }
 
   static char random() {
-    std::random_device rd;  // Устройство случайности
-    std::mt19937 gen(rd()); // Генератор
+    std::random_device rd;                           // Устройство случайности
+    std::mt19937 gen(rd());                          // Генератор
     std::uniform_int_distribution<> dist(-128, 128); // Диапазон распределения
     return dist(gen);
   }
@@ -152,12 +164,13 @@ public:
             randomArr,     bigAssArray1,     bigAssArray2};
   }
 };
-//Слушатель для вывода информации после всех тестов
+// Слушатель для вывода информации после всех тестов
 class TimingListener : public ::testing::EmptyTestEventListener {
 public:
   void OnTestProgramEnd(const ::testing::UnitTest &unit_test) override {
     SelectionSortWrapper::totalTime();
     QuickSortWrapper::totalTime();
+    MergeSortWrapper::totalTime();
   }
 };
 
