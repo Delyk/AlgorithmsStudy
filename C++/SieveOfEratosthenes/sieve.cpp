@@ -113,4 +113,85 @@ std::vector<unsigned> SieveOfEratosthenes_skip(unsigned n) {
 /*Кольцевая факторизация - метод создания последовательности натуральных чисел,
 взаимно простых (НОД = 1) с несколькими первыми простыми числами
 */
-std::vector<unsigned> SieveOfEratosthenes_wheel_factorization(unsigned n) {}
+
+//Проверка, что число взаимно простое с базисом
+static bool isNotDivide(unsigned i, const std::vector<unsigned> &bazis) {
+  for (unsigned j : bazis) {
+    if (!(i % j)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+//Получить размер начальной последовательности
+static inline unsigned getStartSize(const std::vector<unsigned> &bazis) {
+  unsigned size = 1;
+  for (unsigned i : bazis) {
+    size *= (i - 1);
+  }
+  return size;
+}
+
+//Кольцевая факторизация
+static std::vector<unsigned> wheel_factorization(unsigned n) {
+  //Указываем базис и ищем его длину
+  std::vector<unsigned> bazis{2, 3, 5};
+  unsigned primorial = 1;
+  for (auto it = bazis.begin(); it != bazis.end(); it++, primorial *= *it)
+    ;
+  //Заполняем начальную последовательность значениями
+  std::vector<unsigned> wheel;
+  for (std::size_t i = 1; i <= primorial; i++) {
+    if (isNotDivide(i, bazis)) {
+      wheel.push_back(i);
+    }
+  }
+  //Оставшиюся последовательность вычисляем прибавляя к начальной
+  //последовательности длину базиса в цикле, со умножением длины на текущий цикл
+  unsigned size = getStartSize(bazis);
+  for (int i = 1; i <= primorial; i++) {
+    for (std::size_t j = 0; j < size; j++) {
+      unsigned val = wheel[j] + i * primorial;
+      if (val > n) {
+        return wheel;
+      }
+      wheel.push_back(val);
+    }
+  }
+
+  return wheel;
+}
+
+std::vector<unsigned> SieveOfEratosthenes_wheel_factorization(unsigned n) {
+  std::vector<unsigned> wheel = wheel_factorization(n);
+  std::vector<bool> nums(n + 1, true);
+  nums[0] = nums[3] = false;
+
+  //Итерируемся и проверяем только числа из колеса факторизации
+  for (auto i : wheel) {
+    if (i < 2)
+      continue;
+    if (std::pow(i, 2) > n)
+      break;
+    if (nums[i]) {
+      for (std::size_t j = std::pow(i, 2); j <= n; j += i) {
+        nums[i] = false;
+      }
+    }
+  }
+
+  //Переносим все простые числа в вектор
+  std::vector<unsigned> primes;
+  for (std::size_t i = 2; i < n; i++) {
+    if (nums[i]) {
+      primes.push_back(i);
+    }
+  }
+
+  return primes;
+}
+
+//Сегментированное решето для больших чисел
+std::vector<unsigned long long>
+SieveOfEratosthenes_segmented(unsigned long long n);
