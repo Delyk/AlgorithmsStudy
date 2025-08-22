@@ -176,7 +176,7 @@ std::vector<unsigned> SieveOfEratosthenes_wheel_factorization(unsigned n) {
       break;
     if (nums[i]) {
       for (std::size_t j = std::pow(i, 2); j <= n; j += i) {
-        nums[i] = false;
+        nums[j] = false;
       }
     }
   }
@@ -194,4 +194,62 @@ std::vector<unsigned> SieveOfEratosthenes_wheel_factorization(unsigned n) {
 
 //Сегментированное решето для больших чисел
 std::vector<unsigned long long>
-SieveOfEratosthenes_segmented(unsigned long long n);
+SieveOfEratosthenes_segmented(unsigned long long n) {
+  //За размер сегмента берём корень из n
+  std::size_t delta = std::sqrt(n);
+  std::vector<unsigned long long> primes;
+  //Внешний цикл по сегментам
+  for (std::size_t i = 0; i < n; i += delta) {
+    std::vector<bool> nums(delta + 1, true);
+    //Если цикл первый, то заполняем начальные значения в массив простых чисел
+    if (primes.empty()) {
+      for (std::size_t i = 2; std::pow(i, 2) <= delta; i++) {
+        if (nums[i]) {
+          for (std::size_t j = std::pow(i, 2); j < delta; j += i) {
+            nums[j] = false;
+          }
+        }
+      }
+    } else {
+      //Иначе проверяем все числа из массива до корня из delta
+      for (auto it = primes.begin();
+           *it <= static_cast<unsigned long long>(sqrt(i)) &&
+           it != primes.end();
+           i++) {
+        //Устанавливаем все кратные в false
+        for (std::size_t j = std::pow(*it, 2); j < delta; j += *it) {
+          nums[j] = false;
+        }
+      }
+    }
+    //Помещаем числа из сегмента в массив
+    for (std::size_t k = 0; k < nums.size(); k++) {
+      if (nums[k]) {
+        primes.push_back(k + i);
+      }
+    }
+  }
+  return primes;
+}
+
+//Алгоритм с линейным временем выполнения
+std::vector<unsigned> SieveOfEratosthenes_linear(unsigned n) {
+  std::vector<unsigned> pr;
+  std::vector<unsigned> lp(n, 0); //Минимальные простые делители
+  //Для каждого числа от 2 до n
+  for (std::size_t i = 2; i <= n; i++) {
+    //Если lp пуст
+    if (!lp[i]) {
+      //Устанавливаем пустоту в i
+      lp[i] = i;
+      pr.push_back(i); //Помещаем индекс в массив простых чисел
+                       //Начинаем итерацию в массиве простых чисел
+                       //пока не достигнем добавленного числа или числа до
+                       //которого ищем простые
+      for (auto p = pr.begin(); *p <= lp[i] && *p * i <= n; p++) {
+        lp[*p * i] = *p; //Устанавливаем все кратные в ненулевые значения
+      }
+    }
+  }
+  return pr;
+}

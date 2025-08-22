@@ -24,12 +24,12 @@ std::vector<unsigned> SieveOfEratosthenes_skip(unsigned n);
 //Алгоритм с кольцевой факторизацией
 std::vector<unsigned> SieveOfEratosthenes_wheel_factorization(unsigned n);
 
-//Алгоритм с линейным временем выполнения
-std::vector<unsigned> SieveOfEratosthenes_linear(unsigned n);
-
 //Сегментированное решето
 std::vector<unsigned long long>
 SieveOfEratosthenes_segmented(unsigned long long n);
+
+//Алгоритм с линейным временем выполнения
+std::vector<unsigned> SieveOfEratosthenes_linear(unsigned n);
 
 //Решето с распараллеливанием
 std::vector<unsigned long long>
