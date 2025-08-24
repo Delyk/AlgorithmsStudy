@@ -1,6 +1,7 @@
 #include "sieve.h"
 #include <cmath>
 #include <cstddef>
+#include <iterator>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -137,21 +138,22 @@ static inline unsigned getStartSize(const std::vector<unsigned> &bazis) {
 }
 
 // Кольцевая факторизация
-static std::vector<unsigned> wheel_factorization(unsigned n) {
+static std::vector<unsigned long long>
+wheel_factorization(unsigned long long n) {
   // Указываем базис и ищем его длину
-  std::vector<unsigned> bazis{2, 3, 5};
+  std::vector<unsigned> bazis{2, 3, 5, 7};
   unsigned primorial = 1;
   for (auto it = bazis.begin(); it != bazis.end(); it++, primorial *= *it)
     ;
   // Заполняем начальную последовательность значениями
-  std::vector<unsigned> wheel;
+  std::vector<unsigned long long> wheel;
   for (std::size_t i = 1; i <= primorial; i++) {
     if (isNotDivide(i, bazis)) {
       wheel.push_back(i);
     }
   }
-  // Оставшиюся последовательность вычисляем прибавляя к начальной
-  // последовательности длину базиса в цикле, со умножением длины на текущий
+  // Оставшиюся последовательность вычисляем в цикле прибавляя к начальной
+  // последовательности длину базиса, со умножением длины на текущий
   // цикл
   unsigned size = getStartSize(bazis);
   for (int i = 1; i <= primorial; i++) {
@@ -168,7 +170,7 @@ static std::vector<unsigned> wheel_factorization(unsigned n) {
 }
 
 std::vector<unsigned> SieveOfEratosthenes_wheel_factorization(unsigned n) {
-  std::vector<unsigned> wheel = wheel_factorization(n);
+  std::vector<unsigned long long> wheel = wheel_factorization(n);
   std::vector<bool> nums(n + 1, true);
   nums[0] = nums[3] = false;
 
@@ -300,6 +302,68 @@ std::vector<unsigned> SieveOfEratosthenes_parallel(unsigned n) {
   for (std::size_t i = 2; i <= n; i++) {
     if (nums[i])
       primes.push_back(i);
+  }
+  return primes;
+}
+
+// Решето Аткина
+std::vector<unsigned long long> SieveOfAtkhin(unsigned long long n) {
+  using ull = unsigned long long;
+  std::vector<unsigned long long> primes{2, 3, 5};
+  if (n <= 5) {
+    return primes;
+  }
+  std::vector<bool> nums(n + 1, false);
+  unsigned long long lim = std::sqrt(n);
+  if (lim >= 3)
+    nums[2] = nums[3] = true;
+
+  // Основной цикл проходит по всем возможным x и y от 1 до sqrt(n)
+  for (ull x = 1; x <= lim; x++) {
+    ull x2 = x * x; // x^2 для ускорения расчетов
+    for (ull y = 1; y <= lim; y++) {
+      ull y2 = y * y;       // y^2
+      ull eq = 4 * x2 + y2; // 4x^2 + y^2
+      // Первая квадратичная форма: n = 4x^2 + y^2
+      // Числа с остатками 1 или 5 по модулю 12 могут быть простыми
+      if (eq <= n && (eq % 12 == 1 || eq % 12 == 5)) {
+        nums[eq] = !nums[eq]; // Если кол-во решений нечётно, то тут будет true
+      }
+
+      eq = 3 * x2 + y2; // 3*x^2 + y^2
+      // Вторая квадратичная форма: n = 3x^2 + y^2
+      // Числа с остатком 7 по модулю 12 могут быть простыми
+      if (eq <= n && (eq % 12 == 7)) {
+        nums[eq] = !nums[eq]; // Если кол-во решений нечётно, то тут будет true
+      }
+      // Третья квадратичная форма: n = 3x^2 - y^2, где x > y
+      // Числа с остатком 11 по модулю 12 могут быть простыми
+      if (x > y) {
+        eq = 3 * x2 - y2; // 3*x^2 - y^2
+        if (eq <= n && (eq % 12 == 11)) {
+          nums[eq] =
+              !nums[eq]; // Если кол-во решений нечётно, то тут будет true
+        }
+      }
+    }
+  }
+
+  // После маркировки чисел кандидатов исключаем числа,
+  // которые кратны квадратам найденных простых (начиная с 5)
+  // Это необходимо, так как простые не могут иметь квадратные делители
+  for (ull i = 5; i <= lim; i++) {
+    if (nums[i]) {
+      ull i2 = i * i;
+      for (ull j = i2; j < n; j += i2) {
+        nums[j] = false;
+      }
+    }
+  }
+
+  for (std::size_t i = 6; i <= n; i++) {
+    if (nums[i]) {
+      primes.push_back(i);
+    }
   }
   return primes;
 }
