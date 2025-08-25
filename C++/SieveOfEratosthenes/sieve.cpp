@@ -1,13 +1,14 @@
 #include "sieve.h"
 #include <cmath>
 #include <cstddef>
-#include <iterator>
 #include <mutex>
+#include <stdexcept>
 #include <thread>
 #include <vector>
 using namespace sieve;
 
-std::vector<unsigned> sieve::SieveOfEratosthenes(unsigned n) {
+std::vector<unsigned long long>
+sieve::SieveOfEratosthenes(unsigned long long n) {
   // Создаём булевой массив длиной n
   std::vector<bool> nums(n - 1, true);
 
@@ -23,7 +24,7 @@ std::vector<unsigned> sieve::SieveOfEratosthenes(unsigned n) {
     }
   }
   // Переносим все простые числа в вектор
-  std::vector<unsigned> primes;
+  std::vector<unsigned long long> primes;
   for (std::size_t i = 2; i < n; i++) {
     if (nums[i]) {
       primes.push_back(i);
@@ -34,9 +35,10 @@ std::vector<unsigned> sieve::SieveOfEratosthenes(unsigned n) {
 }
 
 // При инициализации неограниченного решете генерируем массив как обычно
-sieve::UnlimitedSieve::UnlimitedSieve(unsigned n) {
-  primes.resize(n - 1, true);
-  for (std::size_t i = 2; std::pow(i, 2) <= n; i++) {
+sieve::UnlimitedSieve::UnlimitedSieve(unsigned long long n) {
+  primes.resize(n + 1, true);
+  primes[0] = primes[1] = false;
+  for (std::size_t i = 2; i <= n; i++) {
     if (primes[i]) {
       last_prime = i;
       for (std::size_t j = std::pow(i, 2); j <= n; j += i) {
@@ -48,54 +50,57 @@ sieve::UnlimitedSieve::UnlimitedSieve(unsigned n) {
 
 // Сначала ищем следующее просто в уже существующем массиве
 bool sieve::UnlimitedSieve::find_next() {
-  bool has_prime = false;
-  for (std::size_t i = last_prime; i < primes.size(); i++) {
-    has_prime = primes[i];
-    if (has_prime) {
+  for (std::size_t i = last_prime + 1; i < primes.size(); i++) {
+    if (primes[i]) {
       last_prime = i;
-      break;
+      return true;
     }
   }
-  return has_prime;
+  return false;
 }
 
 // Если следующее просто число не было найдено, то генерируем продолжение
 // массива
 void sieve::UnlimitedSieve::next_sieve() {
   // Старт следующего просеивания берём как квадрат последнего простого числа
-  std::size_t new_sieve = std::pow(last_prime, 2);
+  std::size_t old_size = primes.size();
+  std::size_t new_sieve = std::pow(old_size, 2);
   // Увеличиваем размер массива на квадрат
-  primes.resize(std::pow(primes.size(), 2), true);
+  primes.resize(new_sieve, true);
   // Алгоритм тот же самый
-  for (std::size_t i = new_sieve; std::pow(i, 2) <= primes.size(); i++) {
+  std::size_t lim = static_cast<std::size_t>(std::sqrt(new_sieve));
+  for (std::size_t i = 2; i <= lim; i++) {
     if (primes[i]) {
-      for (std::size_t j = std::pow(i, 2); j <= primes.size(); j += i) {
+      for (std::size_t j = i * i; j <= primes.size(); j += i) {
         primes[j] = false;
       }
     }
   }
 }
 
-unsigned sieve::UnlimitedSieve::nextPrime() {
+unsigned long long sieve::UnlimitedSieve::nextPrime() {
   // Сначала пытаемся найти следующее в уже существующем массиве
   if (!find_next()) {
     // Если простые кончились, то генерируем следующий набор
     next_sieve();
-    find_next();
+    if (!find_next()) {
+      throw std::runtime_error("Not found next prime");
+    }
   }
 
   return last_prime;
 }
 
 // Решето Эратосфена с пропуском чётных
-std::vector<unsigned> SieveOfEratosthenes_skip(unsigned n) {
+std::vector<unsigned long long>
+sieve::SieveOfEratosthenes_skip(unsigned long long n) {
   // Создаём массив вдвое меньшего размера
   std::vector<bool> nums((n - 1) / 2, true);
 
   // Итерация массива как обычно, только начало с 0
   for (std::size_t i = 0; std::pow(i, 2) <= n / 2; i++) {
     if (nums[i]) {
-      unsigned p =
+      unsigned long long p =
           2 * i + 3; // Шаг для нечётных
                      //+3 т.к. мы начинаем индексацию с 3
                      // Внутренний цикл такой же за исключением поправки на шаг
@@ -105,7 +110,7 @@ std::vector<unsigned> SieveOfEratosthenes_skip(unsigned n) {
     }
   }
 
-  std::vector<unsigned> primes{2};
+  std::vector<unsigned long long> primes{2};
   for (std::size_t i = 0; i < nums.size(); i++) {
     if (nums[i]) {
       primes.push_back(2 * i + 3);
@@ -119,8 +124,9 @@ std::vector<unsigned> SieveOfEratosthenes_skip(unsigned n) {
 */
 
 // Проверка, что число взаимно простое с базисом
-static bool isNotDivide(unsigned i, const std::vector<unsigned> &bazis) {
-  for (unsigned j : bazis) {
+static bool isNotDivide(unsigned long long i,
+                        const std::vector<unsigned long long> &bazis) {
+  for (unsigned long long j : bazis) {
     if (!(i % j)) {
       return false;
     }
@@ -129,9 +135,10 @@ static bool isNotDivide(unsigned i, const std::vector<unsigned> &bazis) {
 }
 
 // Получить размер начальной последовательности
-static inline unsigned getStartSize(const std::vector<unsigned> &bazis) {
-  unsigned size = 1;
-  for (unsigned i : bazis) {
+static inline unsigned long long
+getStartSize(const std::vector<unsigned long long> &bazis) {
+  unsigned long long size = 1;
+  for (unsigned long long i : bazis) {
     size *= (i - 1);
   }
   return size;
@@ -141,8 +148,8 @@ static inline unsigned getStartSize(const std::vector<unsigned> &bazis) {
 static std::vector<unsigned long long>
 wheel_factorization(unsigned long long n) {
   // Указываем базис и ищем его длину
-  std::vector<unsigned> bazis{2, 3, 5, 7};
-  unsigned primorial = 1;
+  std::vector<unsigned long long> bazis{2, 3, 5, 7};
+  unsigned long long primorial = 1;
   for (auto it = bazis.begin(); it != bazis.end(); it++, primorial *= *it)
     ;
   // Заполняем начальную последовательность значениями
@@ -155,10 +162,10 @@ wheel_factorization(unsigned long long n) {
   // Оставшиюся последовательность вычисляем в цикле прибавляя к начальной
   // последовательности длину базиса, со умножением длины на текущий
   // цикл
-  unsigned size = getStartSize(bazis);
-  for (int i = 1; i <= primorial; i++) {
+  unsigned long long size = getStartSize(bazis);
+  for (unsigned long long i = 1; i <= primorial; i++) {
     for (std::size_t j = 0; j < size; j++) {
-      unsigned val = wheel[j] + i * primorial;
+      unsigned long long val = wheel[j] + i * primorial;
       if (val > n) {
         return wheel;
       }
@@ -169,7 +176,8 @@ wheel_factorization(unsigned long long n) {
   return wheel;
 }
 
-std::vector<unsigned> SieveOfEratosthenes_wheel_factorization(unsigned n) {
+std::vector<unsigned long long>
+sieve::SieveOfEratosthenes_wheel_factorization(unsigned long long n) {
   std::vector<unsigned long long> wheel = wheel_factorization(n);
   std::vector<bool> nums(n + 1, true);
   nums[0] = nums[3] = false;
@@ -188,7 +196,7 @@ std::vector<unsigned> SieveOfEratosthenes_wheel_factorization(unsigned n) {
   }
 
   // Переносим все простые числа в вектор
-  std::vector<unsigned> primes;
+  std::vector<unsigned long long> primes;
   for (std::size_t i = 2; i < n; i++) {
     if (nums[i]) {
       primes.push_back(i);
@@ -200,7 +208,7 @@ std::vector<unsigned> SieveOfEratosthenes_wheel_factorization(unsigned n) {
 
 // Сегментированное решето для больших чисел
 std::vector<unsigned long long>
-SieveOfEratosthenes_segmented(unsigned long long n) {
+sieve::SieveOfEratosthenes_segmented(unsigned long long n) {
   // За размер сегмента берём корень из n
   std::size_t delta = std::sqrt(n);
   std::vector<unsigned long long> primes;
@@ -239,9 +247,10 @@ SieveOfEratosthenes_segmented(unsigned long long n) {
 }
 
 // Алгоритм с линейным временем выполнения
-std::vector<unsigned> SieveOfEratosthenes_linear(unsigned n) {
-  std::vector<unsigned> pr;
-  std::vector<unsigned> lp(n, 0); // Минимальные простые делители
+std::vector<unsigned long long>
+sieve::SieveOfEratosthenes_linear(unsigned long long n) {
+  std::vector<unsigned long long> pr;
+  std::vector<unsigned long long> lp(n, 0); // Минимальные простые делители
   // Для каждого числа от 2 до n
   for (std::size_t i = 2; i <= n; i++) {
     // Если lp пуст
@@ -262,8 +271,8 @@ std::vector<unsigned> SieveOfEratosthenes_linear(unsigned n) {
 
 // Решето с распараллеливанием
 // Функция параллельного выполнения - поиск всех кратных
-void del_multiple(unsigned i, unsigned n, std::vector<bool> &nums,
-                  std::mutex &m) {
+static void del_multiple(unsigned long long i, unsigned long long n,
+                         std::vector<bool> &nums, std::mutex &m) {
   for (std::size_t j = std::pow(i, 2); j <= n; j += i) {
     // Блокируем массив mutexом
     std::lock_guard<std::mutex> lock(m);
@@ -271,7 +280,8 @@ void del_multiple(unsigned i, unsigned n, std::vector<bool> &nums,
   }
 }
 
-std::vector<unsigned> SieveOfEratosthenes_parallel(unsigned n) {
+std::vector<unsigned long long>
+sieve::SieveOfEratosthenes_parallel(unsigned long long n) {
   // Инициализация, создаём потоки по кол-ву ядер
   unsigned threads_count = std::thread::hardware_concurrency();
   if (!threads_count)
@@ -298,7 +308,7 @@ std::vector<unsigned> SieveOfEratosthenes_parallel(unsigned n) {
     t.join();
   threads.clear();
 
-  std::vector<unsigned> primes;
+  std::vector<unsigned long long> primes;
   for (std::size_t i = 2; i <= n; i++) {
     if (nums[i])
       primes.push_back(i);
@@ -307,7 +317,7 @@ std::vector<unsigned> SieveOfEratosthenes_parallel(unsigned n) {
 }
 
 // Решето Аткина
-std::vector<unsigned long long> SieveOfAtkhin(unsigned long long n) {
+std::vector<unsigned long long> sieve::SieveOfAtkhin(unsigned long long n) {
   using ull = unsigned long long;
   std::vector<unsigned long long> primes{2, 3, 5};
   if (n <= 5) {
