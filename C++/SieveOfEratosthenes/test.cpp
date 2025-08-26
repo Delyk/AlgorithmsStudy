@@ -34,13 +34,30 @@ public:
   static void results() {
     cout << "Algorithms speed for 1000000:\n";
     for (auto i : speed_check) {
-      cout << fixed << setprecision(2) << i.first << ": " << i.second * 1000
-           << endl;
+      cout << fixed << setprecision(2) << i.first << ": " << i.second / 1000
+           << "s\n";
     }
   }
   bool check_primes(vector<unsigned long long> &generated) {
     for (size_t i = 0; i < generated.size(); i++) {
       if (generated[i] != primes[i]) {
+        cout << "Pos: " << i << " Generated: " << generated[i]
+             << " Control: " << primes[i] << endl;
+        return false;
+      }
+    }
+    return true;
+  }
+
+  size_t j = 0;
+  bool check_primes_seg(vector<unsigned long long> &generated) {
+    for (size_t i = 0; i < generated.size(); i++, j++) {
+      for (; j < primes.size(); j++) {
+        if (generated[i] == primes[j]) {
+          break;
+        }
+      }
+      if (generated[i] != primes[j]) {
         cout << "Pos: " << i << " Generated: " << generated[i]
              << " Control: " << primes[i] << endl;
         return false;
@@ -70,6 +87,7 @@ TEST_P(Sieves, SimpleSieve) {
 }
 
 TEST_P(Sieves, UnlimitedSieve) {
+  // GTEST_SKIP();
   unsigned long long val = GetParam();
   sieve::UnlimitedSieve sieve;
   unsigned long long prime;
@@ -89,6 +107,35 @@ TEST_P(Sieves, UnlimitedSieve) {
 
   cout << fixed << "Sieve " << val << " for " << elapsed_ms.count() << " ms\n";
   speed_check["Unlimited sieve"] = elapsed_ms.count();
+}
+
+TEST_P(Sieves, UnlimitedSieve_pre_gen) {
+  GTEST_SKIP();
+  unsigned long long val = GetParam();
+  if (val >= 1000000)
+    GTEST_SKIP();
+  sieve::UnlimitedSieve sieve(val);
+  unsigned long long prime;
+  chrono::duration<double, milli> elapsed_ms;
+
+  auto start = chrono::high_resolution_clock::now();
+
+  vector<unsigned long long> primes;
+  if (val < 2) {
+    ASSERT_ANY_THROW(sieve.nextPrime());
+  } else {
+    while ((prime = sieve.nextPrime()) < val * 10) {
+      primes.push_back(prime);
+    }
+  }
+
+  auto end = chrono::high_resolution_clock::now();
+  elapsed_ms = end - start;
+
+  ASSERT_TRUE(check_primes_seg(primes));
+
+  cout << fixed << "Sieve " << val << " for " << elapsed_ms.count() << " ms\n";
+  speed_check["Unlimited sieve pre generation"] = elapsed_ms.count();
 }
 
 TEST_P(Sieves, SkipSieve) {
