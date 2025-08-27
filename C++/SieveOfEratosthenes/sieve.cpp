@@ -1,6 +1,8 @@
 #include "sieve.h"
 #include <cmath>
 #include <cstddef>
+#include <fstream>
+#include <iostream>
 #include <mutex>
 #include <stdexcept>
 #include <thread>
