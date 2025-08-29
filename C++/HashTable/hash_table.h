@@ -74,9 +74,14 @@ public:
   ull FNVHash(ull);
   ull MurmurHash(ull);
   //Массив хэш функций
-  std::vector<std::function<unsigned(T)>> hashes;
+  std::vector<std::function<ull(ull)>> hashes{
+      std::bind(&hash_table::ModHash, this, std::placeholders::_1),
+      std::bind(&hash_table::FibonacciHash, this, std::placeholders::_1),
+      std::bind(&hash_table::FibonacciHashPhi, this, std::placeholders::_1),
+      std::bind(&hash_table::FNVHash, this, std::placeholders::_1),
+      std::bind(&hash_table::MurmurHash, this, std::placeholders::_1)};
   //Хэширование
-  unsigned hash(T) const; //Хэш функция
+  ull hash(T); //Хэш функция
   //Конструкторы
   hash_table(unsigned long = 0);
   hash_table(const hash_table &);
@@ -116,7 +121,13 @@ public:
   ull FNVHash(std::string);
   ull PoliminalHash(std::string);
   ull MurmurHash(std::string);
-  unsigned hash(std::string) const; //Хэш функция
+  std::vector<std::function<ull(std::string)>> hashes{
+      std::bind(&hash_table::PersonHash64, this, std::placeholders::_1),
+      std::bind(&hash_table::ModHash, this, std::placeholders::_1),
+      std::bind(&hash_table::FNVHash, this, std::placeholders::_1),
+      std::bind(&hash_table::PoliminalHash, this, std::placeholders::_1),
+      std::bind(&hash_table::MurmurHash, this, std::placeholders::_1)};
+  ull hash(std::string); //Хэш функция
   hash_table(unsigned long = 0);
   hash_table(const hash_table &);
   hash_table(const hash_table &&) noexcept;
@@ -141,6 +152,16 @@ hash_table<T, U>::hash_table(unsigned long size) : hash_table_interface(size) {
   array.resize(size);
 }
 
+template <typename T, typename U> ull hash_table<T, U>::hash(T key) {
+  if (std::is_class<T>()) {
+    return std::hash<T>{}(key);
+  }
+  ull key_to_num = static_cast<ull>(key);
+  ull func_index = ModHash(key_to_num) % hashes.size();
+  auto hash_func = hashes[func_index];
+  return hash_func(key_to_num) % array.size();
+}
+
 //Получить размер массива для хранения
 template <typename T, typename U>
 unsigned long hash_table<T, U>::getCapacity() const {
@@ -163,7 +184,7 @@ unsigned long hash_table<T, U>::getSize() const {
 
 //Простой хэш - остаток от деления на простое число
 template <typename T, typename U> ull hash_table<T, U>::ModHash(ull key) {
-  return (key % prime) % size;
+  return key % prime;
 }
 
 //Хэш Фибоначчи - прибавление к хэшу последнего разряда числа умноженного на
@@ -178,7 +199,7 @@ template <typename T, typename U> ull hash_table<T, U>::FibonacciHash(ull key) {
     ull f2 = f0 + f1;
     f0 = f1;
     f1 = f2;
-    hash = (hash + num * f1) % array.size();
+    hash = (hash + num * f1);
   }
   return hash;
 }
@@ -200,7 +221,7 @@ template <typename T, typename U> ull hash_table<T, U>::FNVHash(ull key) {
   hash ^= key;
   hash *= FNV_prime;
 
-  return hash % array.size();
+  return hash;
 }
 
 // MurmurHash - суть в "хорошем" перемишивании битов числа для широко
@@ -226,7 +247,7 @@ template <typename T, typename U> ull hash_table<T, U>::MurmurHash(ull key) {
   hash *= M;
   hash ^= hash >> r;
 
-  return hash % array.size();
+  return hash;
 }
 
 /*
@@ -247,6 +268,12 @@ hash_table<std::string, U>::hash_table(unsigned long size)
     int j = random(0, i);
     std::swap(table[i], table[j]);
   }
+}
+//Хэш функция
+template <typename U> ull hash_table<std::string, U>::hash(std::string key) {
+  ull func_index = ModHash(key) % hashes.size();
+  auto hash_func = hashes[func_index];
+  return hash_func(key) % array.size();
 }
 
 //Хэш Пирсона - по символьно берём строку и выбираем для хэша число из таблицы
@@ -273,7 +300,7 @@ ull hash_table<std::string, U>::PersonHash64(std::string str) {
     hash64 |= hash << ((7 - i) * 8);
     str[0] = (str[0] + 1) % 256;
   }
-  return hash64 % array.size();
+  return hash64;
 }
 
 //Строковый хэш на основе хэширования отдельных символов
@@ -282,7 +309,7 @@ template <typename U> ull hash_table<std::string, U>::ModHash(std::string str) {
   for (auto ch : str) {
     hash += (ch % prime);
   }
-  return (hash % prime) % array.size();
+  return hash % prime;
 }
 
 // FNV хэш для строк, проход по всем символам и поочерёдное их хэширование
@@ -294,7 +321,7 @@ template <typename U> ull hash_table<std::string, U>::FNVHash(std::string str) {
     hash *= FNV_prime;
   }
 
-  return hash % array.size();
+  return hash;
 }
 
 //Полиминальный хэш - хэш вида hash(S0..n-1) = S0+ps1+p^2S2+...+p^n-1Sn-1, где p
@@ -310,7 +337,7 @@ ull hash_table<std::string, U>::PoliminalHash(std::string str) {
     hash += (ch * p_pow) % FNV_prime;
     p_pow = (p_pow * p) % FNV_prime;
   }
-  return hash % array.size();
+  return hash;
 }
 
 template <typename U>
@@ -351,7 +378,7 @@ ull hash_table<std::string, U>::MurmurHash(std::string str) {
   hash *= M;
   hash ^= hash >> 47;
 
-  return hash % array.size();
+  return hash;
 }
 
 //Проверка на пустоту
