@@ -2,12 +2,14 @@
 #include <climits>
 #include <gtest/gtest.h>
 #include <string>
+#include <utility>
+#include <vector>
 using namespace std;
 using namespace hashtable;
 
 static int random(int start, int end) {
-  std::random_device rd;  // Устройство случайности
-  std::mt19937 gen(rd()); // Генератор
+  std::random_device rd;                            // Устройство случайности
+  std::mt19937 gen(rd());                           // Генератор
   std::uniform_int_distribution<> dist(start, end); // Диапазон распределения
   return dist(gen);
 }
@@ -167,6 +169,54 @@ TEST(HashPrivateTest, UniversalHashString) {
     // std::cout << hash << std::endl;
     EXPECT_GE(hash, 0);
     EXPECT_LT(hash, map.getCapacity());
+  }
+}
+
+TEST(ConstructorStandartHashTest, BasicConstructorZero) {
+  hash_table<int, int> map;
+  EXPECT_EQ(map.getSize(), 0);
+  EXPECT_EQ(map.getCapacity(), 0);
+}
+
+TEST(ConstructorStandartHashTest, BasicConstructor) {
+  hash_table<int, int> map(100);
+  EXPECT_EQ(map.getSize(), 0);
+  EXPECT_EQ(map.getCapacity(), 100);
+}
+
+TEST(ConstructorStandartHashTest, ListConstrucor) {
+  GTEST_SKIP();
+  hash_table<int, int> map({{1, 2}, {2, 3}, {3, 4}});
+  EXPECT_EQ(map.getSize(), 3);
+  EXPECT_EQ(map.getCapacity(), 6);
+  EXPECT_EQ(map[1], 2);
+  EXPECT_EQ(map[2], 3);
+  EXPECT_EQ(map[3], 4);
+  EXPECT_EQ(map[4], 0);
+}
+
+TEST(ConstructorStandartHashTest, CopyConstructor) {
+  GTEST_SKIP();
+  hash_table<int, int> map1({{1, 2}, {2, 3}, {3, 4}});
+  hash_table<int, int> map2(map1);
+  EXPECT_EQ(map1.getSize(), map2.getSize());
+  EXPECT_EQ(map1.getCapacity(), map2.getCapacity());
+  for (int i = 1; i <= 3; i++) {
+    EXPECT_EQ(map1[i], map2[i]);
+  }
+}
+
+TEST(ConstructorStandartHashTest, MoveConstructor) {
+  GTEST_SKIP();
+  hash_table<int, int> map1({{1, 2}, {2, 3}, {3, 4}});
+  std::vector<std::pair<int, int>> control{{1, 2}, {2, 3}, {3, 4}};
+  hash_table<int, int> map2(std::move(map1));
+  EXPECT_EQ(map1.getSize(), 0);
+  EXPECT_EQ(map1.getCapacity(), 0);
+  EXPECT_EQ(map2.getSize(), 3);
+  EXPECT_EQ(map2.getCapacity(), 6);
+  for (int i = 1; i <= 3; i++) {
+    EXPECT_EQ(map2[i], control[i].second);
   }
 }
 
