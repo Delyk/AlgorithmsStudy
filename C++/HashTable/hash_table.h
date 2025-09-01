@@ -18,8 +18,8 @@ using ull = unsigned long long;
 
 // Функция для генерации случайного числа
 static unsigned random(unsigned start, unsigned end) {
-  std::random_device rd;                            // Устройство случайности
-  std::mt19937 gen(rd());                           // Генератор
+  std::random_device rd;  // Устройство случайности
+  std::mt19937 gen(rd()); // Генератор
   std::uniform_int_distribution<> dist(start, end); // Диапазон распределения
   return dist(gen);
 }
@@ -39,14 +39,14 @@ protected:
   const ull FNV_prime = 16777619;
   struct elementBase {
     bool occupied;
-    elementBase() : occupied(false) {};
+    elementBase() : occupied(false){};
     virtual void clear() = 0;
   };
   ull prime;          // Простое число для алгоритмов
   unsigned long size; // Размер, т.е. кол-во элементов
 
 public:
-  hash_table_interface(unsigned long size) {}
+  hash_table_interface(unsigned long size = 0) : size(size) {}
   virtual bool empty() const = 0; // Проверка на пустоту
   virtual void clear() = 0;       // Очистка
   virtual unsigned long
@@ -64,6 +64,7 @@ public:
     T key;
     U data;
     element() : hash_table_interface::elementBase(), key(T{}), data(U{}) {}
+    element(T key, U val);
     void clear() override {}
   };
   // Массив для хранения
@@ -79,18 +80,47 @@ public:
       // bind связывает функцию с экземпляром класса
       // также bind позволяет "зафиксировать" параметр функции, как будто он по
       // умолчанию
-      std::bind(&hash_table::ModHash, this, std::placeholders::_1),
-      std::bind(&hash_table::FibonacciHash, this, std::placeholders::_1),
-      std::bind(&hash_table::FibonacciHashPhi, this, std::placeholders::_1),
-      std::bind(&hash_table::FNVHash, this, std::placeholders::_1),
-      std::bind(&hash_table::MurmurHash, this, std::placeholders::_1)};
+      std::bind(static_cast<ull (hash_table::*)(ull)>(&hash_table::ModHash),
+                this, std::placeholders::_1),
+      std::bind(
+          static_cast<ull (hash_table::*)(ull)>(&hash_table::FibonacciHash),
+          this, std::placeholders::_1),
+      std::bind(
+          static_cast<ull (hash_table::*)(ull)>(&hash_table::FibonacciHashPhi),
+          this, std::placeholders::_1),
+      std::bind(static_cast<ull (hash_table::*)(ull)>(&hash_table::FNVHash),
+                this, std::placeholders::_1),
+      std::bind(static_cast<ull (hash_table::*)(ull)>(&hash_table::MurmurHash),
+                this, std::placeholders::_1)};
+  std::vector<uint8_t> table;
+  void createTable();
+  // Хэши для строк
+  ull PersonHash64(std::string);
+  uint8_t PersonHash8(std::string);
+  ull ModHash(std::string);
+  ull FNVHash(std::string);
+  ull PoliminalHash(std::string);
+  ull MurmurHash(std::string);
+  std::vector<std::function<ull(std::string)>> hashes_str{
+      std::bind(&hash_table::PersonHash64, this, std::placeholders::_1),
+      std::bind(
+          static_cast<ull (hash_table::*)(std::string)>(&hash_table::ModHash),
+          this, std::placeholders::_1),
+      std::bind(
+          static_cast<ull (hash_table::*)(std::string)>(&hash_table::FNVHash),
+          this, std::placeholders::_1),
+      std::bind(&hash_table::PoliminalHash, this, std::placeholders::_1),
+      std::bind(static_cast<ull (hash_table::*)(std::string)>(
+                    &hash_table::MurmurHash),
+                this, std::placeholders::_1)};
   // Хэширование
-  ull hash(T); // Хэш функция
+  ull hash(T);                 // Хэш функция
+  ull hash_str(std::string &); // Хэш функция
   // Конструкторы
   hash_table(unsigned long = 0);
   hash_table(const hash_table &);
   hash_table(hash_table &&) noexcept;
-  hash_table(std::initializer_list<std::pair<T, U>>);
+  hash_table(std::initializer_list<element>);
   // Операторы присваивания
   hash_table &operator=(const hash_table &);
   hash_table &operator=(hash_table &&) noexcept;
@@ -104,55 +134,16 @@ public:
   unsigned long getCapacity() const override;
 };
 
-// Специализированная хэш таблица для строк
-template <typename U>
-class hash_table<std::string, U> : public hash_table_interface {
-public:
-  struct element : public hash_table_interface::elementBase {
-    std::string key;
-    U data;
-    element()
-        : hash_table_interface::elementBase(), key(std::string{}), data(U{}) {}
-    void clear() override {};
-  };
-  // Таблица перестановок для хэша Пирсона
-  std::vector<uint8_t> table;
-  void createTable();
-  std::vector<element> array;
-  // Хэши для строк
-  ull PersonHash64(std::string);
-  uint8_t PersonHash8(std::string);
-  ull ModHash(std::string);
-  ull FNVHash(std::string);
-  ull PoliminalHash(std::string);
-  ull MurmurHash(std::string);
-  std::vector<std::function<ull(std::string)>> hashes{
-      std::bind(&hash_table::PersonHash64, this, std::placeholders::_1),
-      std::bind(&hash_table::ModHash, this, std::placeholders::_1),
-      std::bind(&hash_table::FNVHash, this, std::placeholders::_1),
-      std::bind(&hash_table::PoliminalHash, this, std::placeholders::_1),
-      std::bind(&hash_table::MurmurHash, this, std::placeholders::_1)};
-  ull hash(std::string); // Хэш функция
-  hash_table(unsigned long = 0);
-  hash_table(const hash_table &);
-  hash_table(hash_table &&) noexcept;
-  hash_table(std::initializer_list<std::pair<std::string, U>>);
-  hash_table &operator=(const hash_table &);
-  hash_table &operator=(hash_table &&) noexcept;
-  U &operator[](std::string);
-  void erase(std::string);
-  bool empty() const override;
-  void clear() override;
-  unsigned long getSize() const override;
-  unsigned long getCapacity() const override;
-};
-
-/*
+/* ########################
  * Методы общей хэш-таблицы
+ * ########################
  */
 // Конструкторы
 template <typename T, typename U>
-hash_table<T, U>::hash_table(unsigned long size) : hash_table_interface(size) {
+hash_table<T, U>::hash_table(unsigned long size) {
+  if (table.empty()) {
+    createTable();
+  }
   prime = primes[random(0, 99)];
   array.resize(size);
 }
@@ -161,20 +152,25 @@ template <typename T, typename U>
 hash_table<T, U>::hash_table(const hash_table<T, U> &right) {
   array = right.array;
   prime = right.prime;
+  table = right.table;
 }
 
 template <typename T, typename U>
 hash_table<T, U>::hash_table(hash_table<T, U> &&right) noexcept {
   array = right.array;
   prime = right.prime;
+  table = right.table;
   right.clear();
 }
 
 template <typename T, typename U>
-hash_table<T, U>::hash_table(std::initializer_list<std::pair<T, U>> list) {
+hash_table<T, U>::hash_table(std::initializer_list<element> list) {
+  if (table.empty()) {
+    createTable();
+  }
   array.resize(list.size());
   for (auto i : list) {
-    this[i.first] = i.second;
+    (*this)[i.key] = i.data;
   }
   this->size = list.size();
 }
@@ -184,6 +180,8 @@ template <typename T, typename U>
 hash_table<T, U> &hash_table<T, U>::operator=(const hash_table<T, U> &right) {
   array = right.array;
   prime = right.prime;
+  table = right.table;
+  return *this;
 }
 
 template <typename T, typename U>
@@ -191,8 +189,13 @@ hash_table<T, U> &
 hash_table<T, U>::operator=(hash_table<T, U> &&right) noexcept {
   array = right.array;
   prime = right.prime;
+  table = right.table;
   right.clear();
+  return *this;
 }
+
+//Оператор индексирования
+// template <typename T, typename U> U &hash_table<T, U>::operator[](T key) {}
 
 template <typename T, typename U> ull hash_table<T, U>::hash(T key) {
   if (std::is_class<T>()) {
@@ -202,6 +205,16 @@ template <typename T, typename U> ull hash_table<T, U>::hash(T key) {
   ull func_index = ModHash(key_to_num) % hashes.size();
   auto hash_func = hashes[func_index];
   return hash_func(key_to_num) % array.size();
+}
+
+template <typename T, typename U>
+ull hash_table<T, U>::hash_str(std::string &key) {
+  if (table.empty()) {
+    createTable();
+  }
+  ull func_index = ModHash(key) % hashes.size();
+  auto hash_func = hashes_str[func_index];
+  return hash_func(key) % array.size();
 }
 
 // Получить размер массива для хранения
@@ -276,7 +289,7 @@ template <typename T, typename U> ull hash_table<T, U>::MurmurHash(ull key) {
   ull hash = seed ^ (8 * M);
 
   // Перемешивание ключа
-  key *= M;        // Увеличение распространения битов
+  key *= M; // Увеличение распространения битов
   key ^= key >> r; // Перемещивание битов
   key *= M;
 
@@ -292,11 +305,12 @@ template <typename T, typename U> ull hash_table<T, U>::MurmurHash(ull key) {
   return hash;
 }
 
-/*
+/* ################################################
  * Методы хэш таблицы специализированной на строках
+ * ################################################
  */
 
-template <typename U> void hash_table<std::string, U>::createTable() {
+template <typename T, typename U> void hash_table<T, U>::createTable() {
   for (int i = 0; i < 256; i++) {
     table.push_back(i);
   }
@@ -308,73 +322,10 @@ template <typename U> void hash_table<std::string, U>::createTable() {
   }
 }
 
-// Конструктор с генерацией таблицы перестановок
-template <typename U>
-hash_table<std::string, U>::hash_table(unsigned long size)
-    : hash_table_interface(size) {
-  prime = primes[random(0, 99)];
-  array.resize(size);
-  createTable();
-}
-
-// Конструкторы
-template <typename U>
-hash_table<std::string, U>::hash_table(
-    const hash_table<std::string, U> &right) {
-  table = right.table;
-  array = right.array;
-  prime = right.prime;
-}
-
-template <typename U>
-hash_table<std::string, U>::hash_table(
-    hash_table<std::string, U> &&right) noexcept {
-  table = right.table;
-  array = right.array;
-  prime = right.prime;
-  right.clear();
-}
-
-template <typename U>
-hash_table<std::string, U>::hash_table(
-    std::initializer_list<std::pair<std::string, U>> list) {
-  array.resize(list.size());
-  for (auto i : list) {
-    this[i.first] = i.second;
-  }
-  this->size = list.size();
-  createTable();
-}
-
-// Операторы присваивания
-template <typename U>
-hash_table<std::string, U> &
-hash_table<std::string, U>::operator=(const hash_table<std::string, U> &right) {
-  table = right.table;
-  array = right.array;
-  prime = right.prime;
-}
-
-template <typename U>
-hash_table<std::string, U> &hash_table<std::string, U>::operator=(
-    hash_table<std::string, U> &&right) noexcept {
-  table = right.table;
-  array = right.array;
-  prime = right.prime;
-  right.clear();
-}
-
-// Хэш функция
-template <typename U> ull hash_table<std::string, U>::hash(std::string key) {
-  ull func_index = ModHash(key) % hashes.size();
-  auto hash_func = hashes[func_index];
-  return hash_func(key) % array.size();
-}
-
 // Хэш Пирсона - по символьно берём строку и выбираем для хэша число из таблицы
 // перестановок по индексу XOR между текущим значением хэша и текущим символом
-template <typename U>
-uint8_t hash_table<std::string, U>::PersonHash8(std::string str) {
+template <typename T, typename U>
+uint8_t hash_table<T, U>::PersonHash8(std::string str) {
   uint8_t hash = str.length() % 256;
   for (auto ch : str) {
     hash = table[(hash ^ static_cast<unsigned char>(ch)) % 256];
@@ -382,8 +333,8 @@ uint8_t hash_table<std::string, U>::PersonHash8(std::string str) {
   return hash;
 }
 
-template <typename U>
-ull hash_table<std::string, U>::PersonHash64(std::string str) {
+template <typename T, typename U>
+ull hash_table<T, U>::PersonHash64(std::string str) {
   if (str.empty()) {
     return 0;
   }
@@ -399,7 +350,8 @@ ull hash_table<std::string, U>::PersonHash64(std::string str) {
 }
 
 // Строковый хэш на основе хэширования отдельных символов
-template <typename U> ull hash_table<std::string, U>::ModHash(std::string str) {
+template <typename T, typename U>
+ull hash_table<T, U>::ModHash(std::string str) {
   ull hash = 0;
   for (auto ch : str) {
     hash += (ch % prime);
@@ -408,7 +360,8 @@ template <typename U> ull hash_table<std::string, U>::ModHash(std::string str) {
 }
 
 // FNV хэш для строк, проход по всем символам и поочерёдное их хэширование
-template <typename U> ull hash_table<std::string, U>::FNVHash(std::string str) {
+template <typename T, typename U>
+ull hash_table<T, U>::FNVHash(std::string str) {
   ull hash = 2166136261;
 
   for (auto ch : str) {
@@ -422,8 +375,8 @@ template <typename U> ull hash_table<std::string, U>::FNVHash(std::string str) {
 // Полиминальный хэш - хэш вида hash(S0..n-1) = S0+ps1+p^2S2+...+p^n-1Sn-1, где
 // p больше значения наибольшего символа
 //-
-template <typename U>
-ull hash_table<std::string, U>::PoliminalHash(std::string str) {
+template <typename T, typename U>
+ull hash_table<T, U>::PoliminalHash(std::string str) {
   unsigned p = 31;
   ull p_pow = 1;
   ull hash = 0;
@@ -435,8 +388,8 @@ ull hash_table<std::string, U>::PoliminalHash(std::string str) {
   return hash;
 }
 
-template <typename U>
-ull hash_table<std::string, U>::MurmurHash(std::string str) {
+template <typename T, typename U>
+ull hash_table<T, U>::MurmurHash(std::string str) {
   const ull M = 0xc6a4a7935bd1e995ULL;
   const int r = 47;
   const ull seed = 0xc70f6907UL;
@@ -474,25 +427,5 @@ ull hash_table<std::string, U>::MurmurHash(std::string str) {
   hash ^= hash >> 47;
 
   return hash;
-}
-
-// Проверка на пустоту
-template <typename U> bool hash_table<std::string, U>::empty() const {
-  return true;
-}
-
-// Очистка таблицы
-template <typename U> void hash_table<std::string, U>::clear() {}
-
-// Получить текущего кол-во сохранённых элементов
-template <typename U>
-unsigned long hash_table<std::string, U>::getSize() const {
-  return size;
-}
-
-// Получить размер массива для хранения
-template <typename U>
-unsigned long hash_table<std::string, U>::getCapacity() const {
-  return this->array.size();
 }
 } // namespace hashtable

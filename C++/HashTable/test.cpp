@@ -8,8 +8,8 @@ using namespace std;
 using namespace hashtable;
 
 static int random(int start, int end) {
-  std::random_device rd;                            // Устройство случайности
-  std::mt19937 gen(rd());                           // Генератор
+  std::random_device rd;  // Устройство случайности
+  std::mt19937 gen(rd()); // Генератор
   std::uniform_int_distribution<> dist(start, end); // Диапазон распределения
   return dist(gen);
 }
@@ -164,8 +164,8 @@ TEST(HashPrivateTest, UniversalHashString) {
   hash_table<std::string, int> map(1000);
   for (int i = 0; i < 100; i++) {
     std::string str = random_string(i);
-    EXPECT_EQ(map.hash(str), map.hash(str));
-    unsigned hash = map.hash(str);
+    EXPECT_EQ(map.hash_str(str), map.hash_str(str));
+    unsigned hash = map.hash_str(str);
     // std::cout << hash << std::endl;
     EXPECT_GE(hash, 0);
     EXPECT_LT(hash, map.getCapacity());
@@ -217,6 +217,118 @@ TEST(ConstructorStandartHashTest, MoveConstructor) {
   EXPECT_EQ(map2.getCapacity(), 6);
   for (int i = 1; i <= 3; i++) {
     EXPECT_EQ(map2[i], control[i].second);
+  }
+}
+
+TEST(AssignmentStandartHashTest, CopyAssignment) {
+  GTEST_SKIP();
+  hash_table<int, int> map1({{1, 2}, {2, 3}, {3, 4}});
+  hash_table<int, int> map2({{1, 2}});
+  map2 = map1;
+  EXPECT_EQ(map1.getSize(), 3);
+  EXPECT_EQ(map1.getCapacity(), 6);
+  EXPECT_EQ(map2.getSize(), 3);
+  EXPECT_EQ(map2.getCapacity(), 6);
+  for (int i = 1; i <= 3; i++) {
+    EXPECT_EQ(map1[i], map2[i]);
+  }
+}
+
+TEST(AssignmentStandartHashTest, MoveAssignment) {
+  GTEST_SKIP();
+  hash_table<int, int> map1({{1, 2}, {2, 3}, {3, 4}});
+  hash_table<int, int> map2({{1, 2}});
+  map2 = std::move(map1);
+  std::vector<std::pair<int, int>> control{{1, 2}, {2, 3}, {3, 4}};
+  EXPECT_EQ(map1.getSize(), 0);
+  EXPECT_EQ(map1.getCapacity(), 0);
+  EXPECT_EQ(map2.getSize(), 3);
+  EXPECT_EQ(map2.getCapacity(), 6);
+  for (int i = 1; i <= 3; i++) {
+    EXPECT_EQ(map2[i], control[i].second);
+  }
+}
+
+TEST(ConstructorStringHashTest, BasicConstructorZero) {
+  hash_table<std::string, int> map;
+  EXPECT_EQ(map.getSize(), 0);
+  EXPECT_EQ(map.getCapacity(), 0);
+}
+
+TEST(ConstructorStringHashTest, BasicConstructor) {
+  hash_table<std::string, int> map(3);
+  EXPECT_EQ(map.getSize(), 0);
+  EXPECT_EQ(map.getCapacity(), 3);
+}
+
+TEST(ConstructorStringHashTest, ListConstrucor) {
+  GTEST_SKIP();
+  hash_table<std::string, int> map{{"two", 2}, {"three", 3}, {"four", 4}};
+  std::vector<std::pair<std::string, int>> control{
+      {"two", 2}, {"three", 3}, {"four", 4}};
+  EXPECT_EQ(map.getSize(), 3);
+  EXPECT_EQ(map.getCapacity(), 6);
+  for (auto i : control) {
+    EXPECT_EQ(map[i.first], i.second);
+  }
+}
+
+TEST(ConstructorStringHashTest, CopyConstructor) {
+  GTEST_SKIP();
+  hash_table<std::string, int> map1{{"two", 2}, {"three", 3}, {"four", 4}};
+  hash_table<std::string, int> map2{{"two", 2}};
+  std::vector<std::pair<std::string, int>> control{
+      {"two", 2}, {"three", 3}, {"four", 4}};
+  map2 = map1;
+  EXPECT_EQ(map1.getSize(), map2.getSize());
+  EXPECT_EQ(map1.getCapacity(), map2.getCapacity());
+  for (auto i : control) {
+    EXPECT_EQ(map1[i.first], map2[i.first]);
+  }
+}
+
+TEST(ConstructorStringHashTest, MoveConstructor) {
+  GTEST_SKIP();
+  hash_table<std::string, int> map1{{"two", 2}, {"three", 3}, {"four", 4}};
+  hash_table<std::string, int> map2 = std::move(map1);
+  std::vector<std::pair<std::string, int>> control{
+      {"two", 2}, {"three", 3}, {"four", 4}};
+  EXPECT_EQ(map1.getSize(), 0);
+  EXPECT_EQ(map1.getCapacity(), 0);
+  EXPECT_EQ(map2.getSize(), 3);
+  EXPECT_EQ(map2.getCapacity(), 6);
+  for (auto i : control) {
+    EXPECT_EQ(map2[i.first], i.second);
+  }
+}
+
+TEST(AssignmentStringHashTest, CopyAssignment) {
+  GTEST_SKIP();
+  hash_table<std::string, int> map1{{"two", 2}, {"three", 3}, {"four", 4}};
+  hash_table<std::string, int> map2{{"two", 2}};
+  std::vector<std::pair<std::string, int>> control{
+      {"two", 2}, {"three", 3}, {"four", 4}};
+  map2 = map1;
+  EXPECT_EQ(map1.getSize(), map2.getSize());
+  EXPECT_EQ(map1.getCapacity(), map2.getCapacity());
+  for (auto i : control) {
+    EXPECT_EQ(map1[i.first], map2[i.first]);
+  }
+}
+
+TEST(AssignmentStringHashTest, MoveAssignment) {
+  GTEST_SKIP();
+  hash_table<std::string, int> map1{{"two", 2}, {"three", 3}, {"four", 4}};
+  hash_table<std::string, int> map2{{"two", 2}};
+  std::vector<std::pair<std::string, int>> control{
+      {"two", 2}, {"three", 3}, {"four", 4}};
+  map2 = std::move(map1);
+  EXPECT_EQ(map1.getSize(), 0);
+  EXPECT_EQ(map1.getCapacity(), 0);
+  EXPECT_EQ(map2.getSize(), 3);
+  EXPECT_EQ(map2.getCapacity(), 6);
+  for (auto i : control) {
+    EXPECT_EQ(map2[i.first], i.second);
   }
 }
 
