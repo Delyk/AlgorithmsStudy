@@ -10,6 +10,7 @@
 #include <initializer_list>
 #include <random>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -24,9 +25,9 @@ static unsigned random(unsigned start, unsigned end) {
   return dist(gen);
 }
 
-// Интерфейс для хэш таблиц
-class hash_table_interface {
-protected:
+// Обычная универсальная хэш таблица
+template <typename T, typename U> class hash_table {
+public:
   const unsigned primes[100] = {
       2,   3,   5,   7,   11,  13,  17,  19,  23,  29,  31,  37,  41,  43,  47,
       53,  59,  61,  67,  71,  73,  79,  83,  89,  97,  101, 103, 107, 109, 113,
@@ -37,35 +38,21 @@ protected:
       467, 479, 487, 491, 499, 503, 509, 521, 523, 541};
   const double phi = 0.6180339887;
   const ull FNV_prime = 16777619;
-  struct elementBase {
-    bool occupied;
-    elementBase() : occupied(false){};
-    virtual void clear() = 0;
-  };
   ull prime;          // Простое число для алгоритмов
   unsigned long size; // Размер, т.е. кол-во элементов
-
-public:
-  hash_table_interface(unsigned long size = 0) : size(size) {}
-  virtual bool empty() const = 0; // Проверка на пустоту
-  virtual void clear() = 0;       // Очистка
-  virtual unsigned long
-  getSize() const = 0; // Получить кол-во сохранённых элементов
-  virtual unsigned long
-  getCapacity() const = 0; // Получить размер массива для хранения
-};
-
-// Обычная универсальная хэш таблица
-template <typename T, typename U>
-class hash_table : public hash_table_interface {
-public:
   // Элемент хранящий ключ и данные
-  struct element : public hash_table_interface::elementBase {
+  struct element {
     T key;
     U data;
-    element() : hash_table_interface::elementBase(), key(T{}), data(U{}) {}
-    element(T key, U val);
-    void clear() override {}
+    bool occupied;
+    element() : key(T{}), data(U{}), occupied(true) {}
+    element(T key, U val) : key(key), data(val), occupied(false) {}
+    void clear() {
+      key = T{};
+      data = U{};
+      occupied = true;
+    }
+    ~element() { this->clear(); };
   };
   // Массив для хранения
   std::vector<element> array;
@@ -114,8 +101,8 @@ public:
                     &hash_table::MurmurHash),
                 this, std::placeholders::_1)};
   // Хэширование
-  ull hash(T);                 // Хэш функция
-  ull hash_str(std::string &); // Хэш функция
+  ull hash(T);             // Хэш функция
+  ull hash(std::string &); // Хэш функция
   // Конструкторы
   hash_table(unsigned long = 0);
   hash_table(const hash_table &);
@@ -128,10 +115,10 @@ public:
   U &operator[](T);
   // Удаление элемента
   void erase(T);
-  bool empty() const override;
-  void clear() override;
-  unsigned long getSize() const override;
-  unsigned long getCapacity() const override;
+  bool empty() const;
+  void clear();
+  unsigned long getSize() const;
+  unsigned long getCapacity() const;
 };
 
 /* ########################
@@ -140,7 +127,7 @@ public:
  */
 // Конструкторы
 template <typename T, typename U>
-hash_table<T, U>::hash_table(unsigned long size) {
+hash_table<T, U>::hash_table(unsigned long size) : size(0) {
   if (table.empty()) {
     createTable();
   }
@@ -153,6 +140,7 @@ hash_table<T, U>::hash_table(const hash_table<T, U> &right) {
   array = right.array;
   prime = right.prime;
   table = right.table;
+  size = right.size;
 }
 
 template <typename T, typename U>
@@ -160,6 +148,7 @@ hash_table<T, U>::hash_table(hash_table<T, U> &&right) noexcept {
   array = right.array;
   prime = right.prime;
   table = right.table;
+  size = right.size;
   right.clear();
 }
 
@@ -181,6 +170,7 @@ hash_table<T, U> &hash_table<T, U>::operator=(const hash_table<T, U> &right) {
   array = right.array;
   prime = right.prime;
   table = right.table;
+  size = right.size;
   return *this;
 }
 
@@ -190,25 +180,31 @@ hash_table<T, U>::operator=(hash_table<T, U> &&right) noexcept {
   array = right.array;
   prime = right.prime;
   table = right.table;
+  size = right.size;
   right.clear();
   return *this;
 }
 
 //Оператор индексирования
-// template <typename T, typename U> U &hash_table<T, U>::operator[](T key) {}
+template <typename T, typename U> U &hash_table<T, U>::operator[](T key) {
+  if (std::is_class<T>()) {
+    return std::hash<T>(key);
+  }
+  ull hash_idx = hash(key);
+  if (hash_idx >= array.size()) {
+    return array[0].data;
+  }
+  return array[hash_idx].data;
+}
 
 template <typename T, typename U> ull hash_table<T, U>::hash(T key) {
-  if (std::is_class<T>()) {
-    return std::hash<T>{}(key);
-  }
   ull key_to_num = static_cast<ull>(key);
   ull func_index = ModHash(key_to_num) % hashes.size();
   auto hash_func = hashes[func_index];
   return hash_func(key_to_num) % array.size();
 }
 
-template <typename T, typename U>
-ull hash_table<T, U>::hash_str(std::string &key) {
+template <typename T, typename U> ull hash_table<T, U>::hash(std::string &key) {
   if (table.empty()) {
     createTable();
   }

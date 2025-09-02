@@ -332,6 +332,17 @@ TEST(AssignmentStringHashTest, MoveAssignment) {
   }
 }
 
+TEST(IndexTest, Basic) {
+  hash_table<int, int> map(3);
+  std::vector<std::pair<int, int>> control{{1, 2}, {2, 3}, {3, 4}};
+  map[1] = 2;
+  map[2] = 3;
+  map[3] = 4;
+  for (auto i : control) {
+    EXPECT_EQ(map[i.first], i.second);
+  }
+}
+
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
