@@ -88,7 +88,8 @@ TEST(HashPrivateTest, UniversalHash) {
   hash_table<int, int> map(1000);
   for (int i = 0; i < 100; i++) {
     EXPECT_EQ(map.hash(i), map.hash(i));
-    unsigned hash = map.hash(random(INT_MIN, INT_MAX));
+    int key = random(INT_MIN, INT_MAX);
+    unsigned hash = map.hash(key);
     // std::cout << hash << std::endl;
     EXPECT_GE(hash, 0);
     EXPECT_LT(hash, map.getCapacity());
@@ -164,8 +165,8 @@ TEST(HashPrivateTest, UniversalHashString) {
   hash_table<std::string, int> map(1000);
   for (int i = 0; i < 100; i++) {
     std::string str = random_string(i);
-    EXPECT_EQ(map.hash_str(str), map.hash_str(str));
-    unsigned hash = map.hash_str(str);
+    EXPECT_EQ(map.hash(str), map.hash(str));
+    unsigned hash = map.hash(str);
     // std::cout << hash << std::endl;
     EXPECT_GE(hash, 0);
     EXPECT_LT(hash, map.getCapacity());

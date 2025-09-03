@@ -101,8 +101,7 @@ public:
                     &hash_table::MurmurHash),
                 this, std::placeholders::_1)};
   // Хэширование
-  ull hash(T);             // Хэш функция
-  ull hash(std::string &); // Хэш функция
+  ull hash(T &); // Хэш функция
   // Конструкторы
   hash_table(unsigned long = 0);
   hash_table(const hash_table &);
@@ -187,7 +186,7 @@ hash_table<T, U>::operator=(hash_table<T, U> &&right) noexcept {
 
 //Оператор индексирования
 template <typename T, typename U> U &hash_table<T, U>::operator[](T key) {
-  if (std::is_class<T>()) {
+  if constexpr (std::is_class<T>::value && !std::is_same<T, std::string>()) {
     return std::hash<T>(key);
   }
   ull hash_idx = hash(key);
@@ -197,20 +196,22 @@ template <typename T, typename U> U &hash_table<T, U>::operator[](T key) {
   return array[hash_idx].data;
 }
 
-template <typename T, typename U> ull hash_table<T, U>::hash(T key) {
-  ull key_to_num = static_cast<ull>(key);
-  ull func_index = ModHash(key_to_num) % hashes.size();
-  auto hash_func = hashes[func_index];
-  return hash_func(key_to_num) % array.size();
-}
+template <typename T, typename U> ull hash_table<T, U>::hash(T &key) {
+  // constexpr - значение вычисляется на этапе компеляции
+  if constexpr (std::is_same<T, std::string>()) {
+    if (table.empty()) {
+      createTable();
+    }
+    ull func_index = ModHash(key) % hashes.size();
+    auto hash_func = hashes_str[func_index];
+    return hash_func(key) % array.size();
+  } else {
 
-template <typename T, typename U> ull hash_table<T, U>::hash(std::string &key) {
-  if (table.empty()) {
-    createTable();
+    ull key_to_num = static_cast<ull>(key);
+    ull func_index = ModHash(key_to_num) % hashes.size();
+    auto hash_func = hashes[func_index];
+    return hash_func(key_to_num) % array.size();
   }
-  ull func_index = ModHash(key) % hashes.size();
-  auto hash_func = hashes_str[func_index];
-  return hash_func(key) % array.size();
 }
 
 // Получить размер массива для хранения
