@@ -45,12 +45,12 @@ public:
     T key;
     U data;
     bool occupied;
-    element() : key(T{}), data(U{}), occupied(true) {}
-    element(T key, U val) : key(key), data(val), occupied(false) {}
+    element() : key(T{}), data(U{}), occupied(false) {}
+    element(T key, U val) : key(key), data(val), occupied(true) {}
     void clear() {
       key = T{};
       data = U{};
-      occupied = true;
+      occupied = false;
     }
     ~element() { this->clear(); };
   };
@@ -102,6 +102,9 @@ public:
                 this, std::placeholders::_1)};
   // Хэширование
   ull hash(T &); // Хэш функция
+  void actualSize();
+  void rehashing();
+  ull probing(const T &);
   // Конструкторы
   hash_table(unsigned long = 0);
   hash_table(const hash_table &);
@@ -136,18 +139,22 @@ hash_table<T, U>::hash_table(unsigned long size) : size(0) {
 
 template <typename T, typename U>
 hash_table<T, U>::hash_table(const hash_table<T, U> &right) {
-  array = right.array;
   prime = right.prime;
   table = right.table;
-  size = right.size;
+  for (auto i : right.array) {
+    if (i.occupied)
+      (*this)[i.key] = i.data;
+  }
 }
 
 template <typename T, typename U>
 hash_table<T, U>::hash_table(hash_table<T, U> &&right) noexcept {
-  array = right.array;
   prime = right.prime;
   table = right.table;
-  size = right.size;
+  for (auto i : right.array) {
+    if (i.occupied)
+      (*this)[i.key] = i.data;
+  }
   right.clear();
 }
 
@@ -186,32 +193,87 @@ hash_table<T, U>::operator=(hash_table<T, U> &&right) noexcept {
 
 //Оператор индексирования
 template <typename T, typename U> U &hash_table<T, U>::operator[](T key) {
+  ull hash_idx;
+  actualSize();
   if constexpr (std::is_class<T>::value && !std::is_same<T, std::string>()) {
-    return std::hash<T>(key);
+    hash_idx = std::hash<T>(key);
+  } else {
+    hash_idx = hash(key);
   }
-  ull hash_idx = hash(key);
-  if (hash_idx >= array.size()) {
-    return array[0].data;
+  // std::cout << "Hash: " << hash_idx << std::endl;
+
+  if (array[hash_idx].key == T{}) {
+    array[hash_idx].key = key;
+    array[hash_idx].occupied = true;
+  } else if (array[hash_idx].key != key) {
+    hash_idx = probing(key);
+    // std::cout << "Hash after probing: " << hash_idx << std::endl;
+    array[hash_idx].key = key;
+    array[hash_idx].occupied = true;
   }
+  // std::cout << "Key: " << array[hash_idx].key << std::endl;
+  // std::cout << "Data: " << array[hash_idx].data << std::endl << std::endl;
+
   return array[hash_idx].data;
 }
 
+template <typename T, typename U> void hash_table<T, U>::actualSize() {
+  size = 1;
+  for (auto i : array) {
+    if (i.occupied) {
+      size++;
+    }
+  }
+  if (size >= array.size()) {
+    rehashing();
+  }
+}
+
 template <typename T, typename U> ull hash_table<T, U>::hash(T &key) {
-  // constexpr - значение вычисляется на этапе компеляции
+  // constexpr - значение вычисляется на этапе компиляции
   if constexpr (std::is_same<T, std::string>()) {
     if (table.empty()) {
       createTable();
     }
-    ull func_index = ModHash(key) % hashes.size();
+    ull func_index = FNVHash(key) % hashes_str.size();
     auto hash_func = hashes_str[func_index];
     return hash_func(key) % array.size();
   } else {
 
     ull key_to_num = static_cast<ull>(key);
-    ull func_index = ModHash(key_to_num) % hashes.size();
+    ull func_index = FNVHash(key_to_num) % hashes.size();
     auto hash_func = hashes[func_index];
     return hash_func(key_to_num) % array.size();
   }
+}
+
+template <typename T, typename U> void hash_table<T, U>::rehashing() {
+  std::vector<element> copy = array;
+  array.clear();
+  array.resize(copy.size() * 2 + 1);
+  for (auto i : copy) {
+    if (i.occupied) {
+      (*this)[i.key] = i.data;
+    }
+  }
+}
+
+template <typename T, typename U> ull hash_table<T, U>::probing(const T &key) {
+  ull idx = 0;
+  while (idx < array.size()) {
+    idx++;
+    if (array[idx].key == key) {
+      return idx;
+    }
+  }
+  idx = 0;
+  do {
+    idx++;
+    if (!array[idx].occupied) {
+      return idx;
+    }
+  } while (idx < array.size());
+  return 0;
 }
 
 // Получить размер массива для хранения
@@ -222,11 +284,14 @@ unsigned long hash_table<T, U>::getCapacity() const {
 
 // Проверка на пустоту
 template <typename T, typename U> bool hash_table<T, U>::empty() const {
-  return true;
+  return size;
 }
 
 // Очистка таблицы
-template <typename T, typename U> void hash_table<T, U>::clear() {}
+template <typename T, typename U> void hash_table<T, U>::clear() {
+  array.clear();
+  size = 0;
+}
 
 // Получить кол-во уже сохранённых элементов
 template <typename T, typename U>
