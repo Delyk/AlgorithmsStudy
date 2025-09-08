@@ -163,62 +163,69 @@ hash_table<T, U>::hash_table(std::initializer_list<element> list) {
   if (table.empty()) {
     createTable();
   }
+  prime = primes[random(0, 99)];
   array.resize(list.size());
   for (auto i : list) {
     (*this)[i.key] = i.data;
   }
-  this->size = list.size();
 }
 
 // Операторы присваивания
 template <typename T, typename U>
 hash_table<T, U> &hash_table<T, U>::operator=(const hash_table<T, U> &right) {
-  array = right.array;
+  this->clear();
   prime = right.prime;
   table = right.table;
-  size = right.size;
+  for (auto i : right.array) {
+    if (i.occupied)
+      (*this)[i.key] = i.data;
+  }
   return *this;
 }
 
 template <typename T, typename U>
 hash_table<T, U> &
 hash_table<T, U>::operator=(hash_table<T, U> &&right) noexcept {
-  array = right.array;
+  this->clear();
   prime = right.prime;
   table = right.table;
-  size = right.size;
+  for (auto i : right.array) {
+    if (i.occupied)
+      (*this)[i.key] = i.data;
+  }
   right.clear();
   return *this;
 }
 
 //Оператор индексирования
 template <typename T, typename U> U &hash_table<T, U>::operator[](T key) {
-  ull hash_idx;
   actualSize();
-  if constexpr (std::is_class<T>::value && !std::is_same<T, std::string>()) {
-    hash_idx = std::hash<T>(key);
-  } else {
-    hash_idx = hash(key);
-  }
-  // std::cout << "Hash: " << hash_idx << std::endl;
 
-  if (array[hash_idx].key == T{}) {
-    array[hash_idx].key = key;
-    array[hash_idx].occupied = true;
-  } else if (array[hash_idx].key != key) {
-    hash_idx = probing(key);
-    // std::cout << "Hash after probing: " << hash_idx << std::endl;
-    array[hash_idx].key = key;
-    array[hash_idx].occupied = true;
-  }
-  // std::cout << "Key: " << array[hash_idx].key << std::endl;
-  // std::cout << "Data: " << array[hash_idx].data << std::endl << std::endl;
+  ull hash_idx = hash(key);
 
-  return array[hash_idx].data;
+  // При коллизиях используем метод линейного пробирования
+  ull start_idx = hash_idx;
+  while (true) {
+    if (!array[hash_idx].occupied) {
+      // Пустая ячейка — вставляем новый элемент
+      array[hash_idx].key = key;
+      array[hash_idx].occupied = true;
+      size++;
+      return array[hash_idx].data;
+    } else if (array[hash_idx].key == key) {
+      // Ключ найден — возвращаем ссылку на данные
+      return array[hash_idx].data;
+    }
+    hash_idx = (hash_idx + 1) % array.size();
+    if (hash_idx == start_idx) {
+      // Таблица полна (должна быть переразмерена до этого)
+      throw std::runtime_error("Hashtable is full, rehashing failed");
+    }
+  }
 }
 
 template <typename T, typename U> void hash_table<T, U>::actualSize() {
-  size = 1;
+  size = 0;
   for (auto i : array) {
     if (i.occupied) {
       size++;
@@ -284,7 +291,7 @@ unsigned long hash_table<T, U>::getCapacity() const {
 
 // Проверка на пустоту
 template <typename T, typename U> bool hash_table<T, U>::empty() const {
-  return size;
+  return size > 0 ? false : true;
 }
 
 // Очистка таблицы
