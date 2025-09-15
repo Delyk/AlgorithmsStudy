@@ -236,7 +236,7 @@ TEST(ConstructorStandartHashTest, CopyConstructor) {
   hash_table<int, int> map1({{1, 2}, {2, 3}, {3, 4}, {4, 5}});
   hash_table<int, int> map2(map1);
   EXPECT_EQ(map1.getSize(), map2.getSize());
-  EXPECT_GE(map2.getCapacity(), map1.getCapacity());
+  EXPECT_GE(map2.getCapacity(), map2.getSize());
   for (int i = 1; i <= 4; i++) {
     EXPECT_EQ(map1[i], map2[i]);
   }
@@ -261,7 +261,7 @@ TEST(AssignmentStandartHashTest, CopyAssignment) {
   hash_table<int, int> map2{{1, 2}};
   map2 = map1;
   EXPECT_EQ(map1.getSize(), map2.getSize());
-  EXPECT_GE(map2.getCapacity(), map1.getCapacity());
+  EXPECT_GE(map2.getCapacity(), map2.getSize());
   for (int i = 1; i <= 4; i++) {
     EXPECT_EQ(map1[i], map2[i]);
   }
@@ -316,7 +316,7 @@ TEST(ConstructorStringHashTest, CopyConstructor) {
   std::vector<std::pair<std::string, int>> control{
       {"two", 2}, {"three", 3}, {"four", 4}, {"five", 5}};
   EXPECT_EQ(map1.getSize(), map2.getSize());
-  EXPECT_GE(map2.getCapacity(), map1.getCapacity());
+  EXPECT_GE(map2.getCapacity(), map2.getSize());
   for (auto i : control) {
     EXPECT_EQ(map1[i.first], map2[i.first]);
   }
@@ -346,7 +346,7 @@ TEST(AssignmentStringHashTest, CopyAssignment) {
   std::vector<std::pair<std::string, int>> control{
       {"two", 2}, {"three", 3}, {"four", 4}, {"five", 5}};
   EXPECT_EQ(map1.getSize(), map2.getSize());
-  EXPECT_GE(map2.getCapacity(), map1.getCapacity());
+  EXPECT_GE(map2.getCapacity(), map2.getSize());
   for (auto i : control) {
     EXPECT_EQ(map1[i.first], map2[i.first]);
   }

@@ -40,6 +40,7 @@ public:
   const ull FNV_prime = 16777619;
   ull prime;          // Простое число для алгоритмов
   unsigned long size; // Размер, т.е. кол-во элементов
+  double load_factor = 0.0; //Коэффициент заполнения
   // Элемент хранящий ключ и данные
   struct element {
     T key;
@@ -202,6 +203,8 @@ template <typename T, typename U> U &hash_table<T, U>::operator[](T key) {
   actualSize();
 
   ull hash_idx = hash(key);
+  ull m = array.size() > 1 ? array.size() - 1 : 1;
+  ull step = 1 + MurmurHash(key) % m;
 
   // При коллизиях используем метод линейного пробирования
   ull start_idx = hash_idx;
@@ -216,7 +219,7 @@ template <typename T, typename U> U &hash_table<T, U>::operator[](T key) {
       // Ключ найден — возвращаем ссылку на данные
       return array[hash_idx].data;
     }
-    hash_idx = (hash_idx + 1) % array.size();
+    hash_idx = (hash_idx + step) % array.size();
     if (hash_idx == start_idx) {
       // Таблица полна (должна быть переразмерена до этого)
       throw std::runtime_error("Hashtable is full, rehashing failed");
@@ -231,7 +234,12 @@ template <typename T, typename U> void hash_table<T, U>::actualSize() {
       size++;
     }
   }
-  if (size >= array.size()) {
+  if (array.size()) {
+    load_factor = size / static_cast<double>(array.size());
+    if (load_factor >= 0.7) {
+      rehashing();
+    }
+  } else {
     rehashing();
   }
 }
