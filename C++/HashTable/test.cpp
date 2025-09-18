@@ -369,6 +369,58 @@ TEST(AssignmentStringHashTest, MoveAssignment) {
   }
 }
 
+TEST(DeleteStandartTest, OnlyDelete) {
+  hash_table<int, int> map1({{1, 2}, {2, 3}, {3, 4}, {4, 5}});
+  std::vector<std::pair<int, int>> control{{1, 2}, {2, 3}, {3, 0}, {4, 0}};
+  map1.erase(3);
+  map1.erase(4);
+  for (auto i : control) {
+    EXPECT_EQ(map1[i.first], i.second);
+  }
+}
+
+TEST(DeleteStandartTest, WriteAfterDelete) {
+  hash_table<int, int> map1({{1, 2}, {2, 3}, {3, 4}, {4, 5}});
+  std::vector<std::pair<int, int>> control{{1, 2}, {2, 3}, {3, 10}, {4, 10}};
+  map1.erase(3);
+  map1.erase(4);
+  EXPECT_EQ(map1.getSize(), 2);
+  map1[3] = 10;
+  map1[4] = 10;
+  EXPECT_EQ(map1.getSize(), 4);
+  for (auto i : control) {
+    EXPECT_EQ(map1[i.first], i.second);
+  }
+}
+
+TEST(DeleteStringTest, OnlyDelete) {
+  hash_table<std::string, int> map1{
+      {"two", 2}, {"three", 3}, {"four", 4}, {"five", 5}};
+  std::vector<std::pair<std::string, int>> control{
+      {"two", 2}, {"three", 3}, {"four", 0}, {"five", 0}};
+  map1.erase("four");
+  map1.erase("five");
+  for (auto i : control) {
+    EXPECT_EQ(map1[i.first], i.second);
+  }
+}
+
+TEST(DeleteStringTest, WriteAfterDelete) {
+  hash_table<std::string, int> map1{
+      {"two", 2}, {"three", 3}, {"four", 4}, {"five", 5}};
+  std::vector<std::pair<std::string, int>> control{
+      {"two", 2}, {"three", 3}, {"four", 10}, {"five", 10}};
+  map1.erase("four");
+  map1.erase("five");
+  EXPECT_EQ(map1.getSize(), 2);
+  map1["four"] = 10;
+  map1["five"] = 10;
+  EXPECT_EQ(map1.getSize(), 4);
+  for (auto i : control) {
+    EXPECT_EQ(map1[i.first], i.second);
+  }
+}
+
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

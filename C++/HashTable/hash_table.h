@@ -102,10 +102,11 @@ public:
                     &hash_table::MurmurHash),
                 this, std::placeholders::_1)};
   // Хэширование
-  ull hash(T &); // Хэш функция
+  ull hash(const T &); // Хэш функция
+  ull probing(ull, const T &);
   void actualSize();
   void rehashing();
-  ull probing(const T &);
+  // public:
   // Конструкторы
   hash_table(unsigned long = 0);
   hash_table(const hash_table &);
@@ -117,7 +118,7 @@ public:
   // Оператор получения значения по ключу
   U &operator[](T);
   // Удаление элемента
-  void erase(T);
+  bool erase(const T &);
   bool empty() const;
   void clear();
   unsigned long getSize() const;
@@ -203,21 +204,23 @@ template <typename T, typename U> U &hash_table<T, U>::operator[](T key) {
   actualSize();
 
   ull hash_idx = hash(key);
+  hash_idx = probing(hash_idx, key);
+  if (!array[hash_idx].occupied) {
+    array[hash_idx].key = key;
+    array[hash_idx].occupied = true;
+    size++;
+  }
+  return array[hash_idx].data;
+}
+
+template <typename T, typename U>
+ull hash_table<T, U>::probing(ull hash_idx, const T &key) {
+  ull start_idx = hash_idx;
   ull m = array.size() > 1 ? array.size() - 1 : 1;
   ull step = 1 + MurmurHash(key) % m;
-
-  // При коллизиях используем метод линейного пробирования
-  ull start_idx = hash_idx;
   while (true) {
-    if (!array[hash_idx].occupied) {
-      // Пустая ячейка — вставляем новый элемент
-      array[hash_idx].key = key;
-      array[hash_idx].occupied = true;
-      size++;
-      return array[hash_idx].data;
-    } else if (array[hash_idx].key == key) {
-      // Ключ найден — возвращаем ссылку на данные
-      return array[hash_idx].data;
+    if (!array[hash_idx].occupied || array[hash_idx].key == key) {
+      return hash_idx;
     }
     hash_idx = (hash_idx + step) % array.size();
     if (hash_idx == start_idx) {
@@ -244,7 +247,7 @@ template <typename T, typename U> void hash_table<T, U>::actualSize() {
   }
 }
 
-template <typename T, typename U> ull hash_table<T, U>::hash(T &key) {
+template <typename T, typename U> ull hash_table<T, U>::hash(const T &key) {
   // constexpr - значение вычисляется на этапе компиляции
   if constexpr (std::is_same<T, std::string>()) {
     if (table.empty()) {
@@ -273,22 +276,17 @@ template <typename T, typename U> void hash_table<T, U>::rehashing() {
   }
 }
 
-template <typename T, typename U> ull hash_table<T, U>::probing(const T &key) {
-  ull idx = 0;
-  while (idx < array.size()) {
-    idx++;
-    if (array[idx].key == key) {
-      return idx;
-    }
+//Удалить элемент
+template <typename T, typename U> bool hash_table<T, U>::erase(const T &key) {
+  ull index = hash(key);
+  index = probing(index, key);
+  element &el = array.at(index);
+  if (el.occupied) {
+    el.clear();
+    actualSize();
+    return true;
   }
-  idx = 0;
-  do {
-    idx++;
-    if (!array[idx].occupied) {
-      return idx;
-    }
-  } while (idx < array.size());
-  return 0;
+  return false;
 }
 
 // Получить размер массива для хранения
