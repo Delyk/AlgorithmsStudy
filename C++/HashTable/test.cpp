@@ -7,6 +7,7 @@
 using namespace std;
 using namespace hashtable;
 
+#ifdef ALL_TEST
 static int random(int start, int end) {
   std::random_device rd;  // Устройство случайности
   std::mt19937 gen(rd()); // Генератор
@@ -172,6 +173,8 @@ TEST(HashPrivateTest, UniversalHashString) {
     EXPECT_LT(hash, map.getCapacity());
   }
 }
+
+#endif
 
 TEST(ConstructorStandartHashTest, BasicConstructorZero) {
   hash_table<int, int> map;
@@ -372,8 +375,10 @@ TEST(AssignmentStringHashTest, MoveAssignment) {
 TEST(DeleteStandartTest, OnlyDelete) {
   hash_table<int, int> map1({{1, 2}, {2, 3}, {3, 4}, {4, 5}});
   std::vector<std::pair<int, int>> control{{1, 2}, {2, 3}, {3, 0}, {4, 0}};
-  map1.erase(3);
-  map1.erase(4);
+  EXPECT_TRUE(map1.erase(3));
+  EXPECT_TRUE(map1.erase(4));
+  EXPECT_FALSE(map1.erase(4));
+  EXPECT_EQ(map1.getSize(), 2);
   for (auto i : control) {
     EXPECT_EQ(map1[i.first], i.second);
   }
@@ -382,8 +387,9 @@ TEST(DeleteStandartTest, OnlyDelete) {
 TEST(DeleteStandartTest, WriteAfterDelete) {
   hash_table<int, int> map1({{1, 2}, {2, 3}, {3, 4}, {4, 5}});
   std::vector<std::pair<int, int>> control{{1, 2}, {2, 3}, {3, 10}, {4, 10}};
-  map1.erase(3);
-  map1.erase(4);
+  EXPECT_TRUE(map1.erase(3));
+  EXPECT_TRUE(map1.erase(4));
+  EXPECT_FALSE(map1.erase(4));
   EXPECT_EQ(map1.getSize(), 2);
   map1[3] = 10;
   map1[4] = 10;
@@ -398,8 +404,10 @@ TEST(DeleteStringTest, OnlyDelete) {
       {"two", 2}, {"three", 3}, {"four", 4}, {"five", 5}};
   std::vector<std::pair<std::string, int>> control{
       {"two", 2}, {"three", 3}, {"four", 0}, {"five", 0}};
-  map1.erase("four");
-  map1.erase("five");
+  EXPECT_TRUE(map1.erase("four"));
+  EXPECT_TRUE(map1.erase("five"));
+  EXPECT_FALSE(map1.erase("four"));
+  EXPECT_EQ(map1.getSize(), 2);
   for (auto i : control) {
     EXPECT_EQ(map1[i.first], i.second);
   }
@@ -410,8 +418,9 @@ TEST(DeleteStringTest, WriteAfterDelete) {
       {"two", 2}, {"three", 3}, {"four", 4}, {"five", 5}};
   std::vector<std::pair<std::string, int>> control{
       {"two", 2}, {"three", 3}, {"four", 10}, {"five", 10}};
-  map1.erase("four");
-  map1.erase("five");
+  EXPECT_TRUE(map1.erase("four"));
+  EXPECT_TRUE(map1.erase("five"));
+  EXPECT_FALSE(map1.erase("four"));
   EXPECT_EQ(map1.getSize(), 2);
   map1["four"] = 10;
   map1["five"] = 10;

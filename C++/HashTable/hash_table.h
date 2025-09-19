@@ -9,6 +9,7 @@
 #include <gtest/gtest_prod.h>
 #include <initializer_list>
 #include <random>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -27,7 +28,11 @@ static unsigned random(unsigned start, unsigned end) {
 
 // Обычная универсальная хэш таблица
 template <typename T, typename U> class hash_table {
+#ifdef ALL_TEST
 public:
+#else
+private:
+#endif
   const unsigned primes[100] = {
       2,   3,   5,   7,   11,  13,  17,  19,  23,  29,  31,  37,  41,  43,  47,
       53,  59,  61,  67,  71,  73,  79,  83,  89,  97,  101, 103, 107, 109, 113,
@@ -103,10 +108,11 @@ public:
                 this, std::placeholders::_1)};
   // Хэширование
   ull hash(const T &); // Хэш функция
-  ull probing(ull, const T &);
+  ull probing(const T &);
   void actualSize();
   void rehashing();
-  // public:
+
+public:
   // Конструкторы
   hash_table(unsigned long = 0);
   hash_table(const hash_table &);
@@ -204,7 +210,9 @@ template <typename T, typename U> U &hash_table<T, U>::operator[](T key) {
   actualSize();
 
   ull hash_idx = hash(key);
-  hash_idx = probing(hash_idx, key);
+  if (array[hash_idx].key != key && array[hash_idx].occupied) {
+    hash_idx = probing(key);
+  }
   if (!array[hash_idx].occupied) {
     array[hash_idx].key = key;
     array[hash_idx].occupied = true;
@@ -213,19 +221,29 @@ template <typename T, typename U> U &hash_table<T, U>::operator[](T key) {
   return array[hash_idx].data;
 }
 
-template <typename T, typename U>
-ull hash_table<T, U>::probing(ull hash_idx, const T &key) {
+template <typename T, typename U> ull hash_table<T, U>::probing(const T &key) {
+  ull hash_idx = 0;
   ull start_idx = hash_idx;
   ull m = array.size() > 1 ? array.size() - 1 : 1;
   ull step = 1 + MurmurHash(key) % m;
   while (true) {
-    if (!array[hash_idx].occupied || array[hash_idx].key == key) {
+    if (array[hash_idx].key == key) {
       return hash_idx;
     }
     hash_idx = (hash_idx + step) % array.size();
     if (hash_idx == start_idx) {
-      // Таблица полна (должна быть переразмерена до этого)
-      throw std::runtime_error("Hashtable is full, rehashing failed");
+      break;
+    }
+  }
+  hash_idx = 0;
+  start_idx = hash_idx;
+  while (true) {
+    if (!array[hash_idx].occupied) {
+      return hash_idx;
+    }
+    hash_idx = (hash_idx + step) % array.size();
+    if (hash_idx == start_idx) {
+      throw std::runtime_error("Hash is full");
     }
   }
 }
@@ -279,11 +297,13 @@ template <typename T, typename U> void hash_table<T, U>::rehashing() {
 //Удалить элемент
 template <typename T, typename U> bool hash_table<T, U>::erase(const T &key) {
   ull index = hash(key);
-  index = probing(index, key);
+  if (array[index].key != key) {
+    index = probing(key);
+  }
   element &el = array.at(index);
   if (el.occupied) {
     el.clear();
-    actualSize();
+    size--;
     return true;
   }
   return false;
