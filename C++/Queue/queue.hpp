@@ -1,5 +1,6 @@
 #pragma once
-//Очередь, стековая очередь, дек, очередь с приоритетом
+//Очередь, стековая очередь, дек, очередь с приоритетом, очередь Майкла-Скотта,
+//персистентная очередь
 
 #include <initializer_list>
 #include <memory>
@@ -37,6 +38,51 @@ public:
   T front() const;
   void clear();
   bool empty() const;
+};
+
+//Очередь на стеках
+template <typename T> class queue_stack {
+  template <typename E> class stack {
+    struct element {
+      T data;
+      std::shared_ptr<element> prev;
+      element(T data = T{}, std::shared_ptr<element> current = nullptr)
+          : data(data), prev(current) {}
+      void clear() {
+        prev = nullptr;
+        data = T{};
+      }
+      ~element() { this->clear(); }
+    };
+    std::shared_ptr<element> head;
+
+  public:
+    stack();
+    void push(T);
+    T pop();
+    T front() const;
+    bool empty() const;
+    void clear();
+    stack<E> &operator=(const stack<E> &);
+  };
+  stack<T> right;
+  stack<T> left;
+
+  void refillStacks();
+
+public:
+  queue_stack();
+  queue_stack(std::initializer_list<T>);
+  queue_stack(const queue_stack<T> &);
+  queue_stack(queue_stack<T> &&);
+  queue_stack &operator=(std::initializer_list<T>);
+  queue_stack &operator=(const queue_stack<T> &);
+  queue_stack &operator=(queue_stack<T> &&);
+  void enqueue(T);
+  T dequeue();
+  T front();
+  bool empty() const;
+  void clear();
 };
 
 /*** Методы простой очереди ***/
@@ -95,17 +141,19 @@ template <typename T> queue<T> &queue<T>::operator=(queue<T> &&right) {
 //Добавить элемент в очередь
 template <typename T> void queue<T>::enqueue(T data) {
   element new_el(data);
-  new_el.next = tail;
+  new_el.next =
+      tail; //Создаётся новый хвост и текущий хвост считается как следующий
   tail = std::make_shared<element>(new_el);
   if (tail->next) {
-    tail->next->prev = tail;
+    tail->next->prev =
+        tail; //У предыдущего хвоста устанавлием текущий хвост как предыдущий
   }
   if (!head) {
-    head = tail;
+    head = tail; //Если головы нет, то хвост и голова одинаковы
   } else {
-    if (!head->prev) {
-      head->prev = tail;
-      tail->next = head;
+    if (!head->prev) { //Если предыдущий элемент у головы пуст
+      head->prev = tail; //Устанавливаем предыдущий в хвост
+      tail->next = head; //У хвоста следующий - голова
     }
   }
 }
@@ -116,13 +164,13 @@ template <typename T> T queue<T>::dequeue() {
   if (head) {
     data = head->data;
     std::shared_ptr<element> old_head = head;
-    head = head->prev;
-    if (head) {
+    head = head->prev; //Устанавливаем текущую голову как предыдущую
+    if (head) { //Если голова не пуста, то следущий элемент обнуляем
       head->next = nullptr;
     } else {
-      tail = nullptr;
+      tail = nullptr; //Иначе полностью обнуляем очередь
     }
-    old_head->clear();
+    old_head->clear(); //Очищаем старую голову
   } else {
     throw std::runtime_error("Empty queue");
   }
@@ -151,6 +199,180 @@ template <typename T> void queue<T>::clear() {
 //Проверка на пустоту
 template <typename T> bool queue<T>::empty() const {
   return head.get() == nullptr ? true : false;
+}
+
+/*** Методы стековой очереди ***/
+/*** Стек ***/
+
+//Конструктор
+template <typename T>
+template <typename E>
+queue_stack<T>::stack<E>::stack() : head(nullptr) {}
+
+//Оператор присваивания
+template <typename T>
+template <typename E>
+typename queue_stack<T>::template stack<E> &
+queue_stack<T>::stack<E>::operator=(const stack<E> &right) {
+  this->clear();
+  if (right.head) {
+    this->head = std::make_shared<element>(right.head->data, nullptr);
+    std::shared_ptr<element> cursor = right.head->prev;
+    std::shared_ptr<element> lcursor = this->head;
+    while (cursor) {
+      lcursor->prev = std::make_shared<element>(cursor->data, nullptr);
+      cursor = cursor->prev;
+      lcursor = lcursor->prev;
+    }
+  }
+  return *this;
+}
+
+// push
+template <typename T>
+template <typename E>
+void queue_stack<T>::stack<E>::push(T data) {
+  std::shared_ptr<element> add = std::make_shared<element>(data, head);
+  head = add;
+}
+
+// pop
+template <typename T> template <typename E> T queue_stack<T>::stack<E>::pop() {
+  T data = T{};
+  if (head) {
+    data = head->data;
+    std::shared_ptr<element> old_head = head;
+    head = head->prev;
+    old_head->clear();
+  } else {
+    throw std::runtime_error("Empty stack");
+  }
+  return data;
+}
+
+//Верхний элемент очереди
+template <typename T>
+template <typename E>
+T queue_stack<T>::stack<E>::front() const {
+  if (head.get() != nullptr) {
+    return head->data;
+  } else {
+    throw std::runtime_error("Empty stack");
+  }
+}
+
+//Очистка стека
+template <typename T>
+template <typename E>
+void queue_stack<T>::stack<E>::clear() {
+  while (head) {
+    this->pop();
+  }
+}
+
+//Проверка на пустоту
+template <typename T>
+template <typename E>
+bool queue_stack<T>::stack<E>::empty() const {
+  return head.get() == nullptr ? true : false;
+}
+/*** Стековая очередь ***/
+//Конструкторы
+template <typename T> queue_stack<T>::queue_stack() {
+  left = stack<T>();
+  right = stack<T>();
+}
+
+template <typename T>
+queue_stack<T>::queue_stack(std::initializer_list<T> list) {
+  for (auto i : list) {
+    left.push(i);
+  }
+}
+
+template <typename T> queue_stack<T>::queue_stack(const queue_stack<T> &right) {
+  this->left = right.left;
+  this->right = right.right;
+}
+
+template <typename T> queue_stack<T>::queue_stack(queue_stack<T> &&right) {
+  this->left = right.left;
+  this->right = right.right;
+  right.clear();
+}
+
+//Операторы присваивания
+template <typename T>
+queue_stack<T> &queue_stack<T>::operator=(std::initializer_list<T> list) {
+  this->clear();
+  for (auto i : list) {
+    left.push(i);
+  }
+  return *this;
+}
+
+template <typename T>
+queue_stack<T> &queue_stack<T>::operator=(const queue_stack<T> &right) {
+  this->clear();
+  this->left = right.left;
+  this->right = right.right;
+  return *this;
+}
+
+template <typename T>
+queue_stack<T> &queue_stack<T>::operator=(queue_stack<T> &&right) {
+  this->clear();
+  this->left = right.left;
+  this->right = right.right;
+  right.clear();
+  return *this;
+}
+
+//Перенести из левого стека в правый
+template <typename T> void queue_stack<T>::refillStacks() {
+  while (!left.empty()) {
+    right.push(left.pop()); //Если очередь пуста, то освобождает левый стек и
+                            //перемещаем если элементы в обратном порядке в
+                            //правый стек
+  }
+}
+
+//Добавить в очередь
+template <typename T> void queue_stack<T>::enqueue(T data) {
+  left.push(data); //При push просто помещаем элемент в левый стек
+}
+
+//Убрать из очереди
+template <typename T> T queue_stack<T>::dequeue() {
+  //При попытке извлечения элемента из очереди
+  if (right.empty()) {
+    refillStacks();
+  }
+  if (right.empty()) {
+    throw std::runtime_error("Empty queue");
+  }
+  return right.pop();
+}
+
+//Получить первый элемент очереди
+template <typename T> T queue_stack<T>::front() {
+  if (right.empty()) {
+    refillStacks();
+  }
+  if (right.empty()) {
+    throw std::runtime_error("Empty queue");
+  }
+  return right.front();
+}
+
+//Проверка на пустоту
+template <typename T> bool queue_stack<T>::empty() const {
+  return left.empty() && right.empty();
+}
+
+template <typename T> void queue_stack<T>::clear() {
+  left.clear();
+  right.clear();
 }
 
 } // namespace queues
