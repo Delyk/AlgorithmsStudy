@@ -9,6 +9,7 @@ namespace queues {
 
 // FIFO - first in, first out (первый пришёл - первый ушёл)
 template <typename T> class queue {
+protected:
   struct element {
     T data;
     std::shared_ptr<element> next;
@@ -38,6 +39,22 @@ public:
   T front() const;
   void clear();
   bool empty() const;
+};
+
+//Дек
+template <typename T> class deque : public queue<T> {
+public:
+  deque();
+  deque(std::initializer_list<T>);
+  deque(const deque<T> &);
+  deque(deque &&) noexcept;
+  deque &operator=(std::initializer_list<T>);
+  deque &operator=(const deque &);
+  deque &operator=(deque &&);
+
+  void enqueue_front(T);
+  T dequeue_back();
+  T back() const;
 };
 
 //Очередь на стеках
@@ -199,6 +216,87 @@ template <typename T> void queue<T>::clear() {
 //Проверка на пустоту
 template <typename T> bool queue<T>::empty() const {
   return head.get() == nullptr ? true : false;
+}
+
+/*** Методы дека ***/
+//Конструкторы
+template <typename T> deque<T>::deque() : queue<T>() {}
+
+template <typename T>
+deque<T>::deque(std::initializer_list<T> list) : queue<T>(list) {}
+
+template <typename T>
+deque<T>::deque(const deque<T> &right) : queue<T>(right) {}
+
+template <typename T>
+deque<T>::deque(deque<T> &&right) noexcept : queue<T>(right) {}
+
+//Операторы присваивания
+
+template <typename T>
+deque<T> &deque<T>::operator=(std::initializer_list<T> list) {
+  this->clear();
+  for (auto i : list) {
+    this->enqueue(i);
+  }
+  return *this;
+}
+
+template <typename T> deque<T> &deque<T>::operator=(const deque<T> &right) {
+  this->clear();
+  this->head = right.head;
+  this->tail = right.tail;
+  return *this;
+}
+
+template <typename T> deque<T> &deque<T>::operator=(deque<T> &&right) {
+  this->clear();
+  try {
+    while (right.head) {
+      this->enqueue(right.dequeue());
+    }
+  } catch (std::runtime_error &e) {
+  }
+  return *this;
+}
+
+//Добавить в голову очереди
+template <typename T> void deque<T>::enqueue_front(T data) {
+  std::shared_ptr<typename queue<T>::element> add =
+      std::make_shared<typename queue<T>::element>(data, nullptr,
+                                                   queue<T>::head);
+  if (this->head) {
+    this->head->next = add;
+  }
+  this->head = add;
+  if (!this->tail) {
+    this->tail = this->head;
+  }
+}
+
+//Убрать из хвоста дека
+template <typename T> T deque<T>::dequeue_back() {
+  if (this->tail) {
+    T data = this->tail->data;
+    std::shared_ptr<typename queue<T>::element> old_tail = this->tail;
+    if (this->tail->next) {
+      this->tail->next->prev = nullptr;
+    }
+    this->tail = this->tail->next;
+    old_tail->clear();
+    return data;
+  } else {
+    throw std::runtime_error("Empty deque");
+  }
+}
+
+//Последний элемент дека
+template <typename T> T deque<T>::back() const {
+  if (this->tail) {
+    return this->tail->data;
+  } else {
+    throw std::runtime_error("Empty deque");
+  }
 }
 
 /*** Методы стековой очереди ***/
