@@ -1,187 +1,101 @@
 #include "queue.hpp"
+#include "gtest/gtest.h"
 #include <gtest/gtest.h>
 using namespace queues;
 
-class QueueTest : public ::testing::Test {
+template <typename T> class QueueTest : public ::testing::Test {
 protected:
-  queue<int> q_default;
-  queue<int> q_list{1, 2, 3};
+  T q_default;
+  T q_list{1, 2, 3};
 };
 
-TEST_F(QueueTest, DefaultConstructorCreatesEmptyQueue) {
-  EXPECT_TRUE(q_default.empty());
+typedef ::testing::Types<queue<int>, queue_stack<int>, deque<int>> Impl;
+
+TYPED_TEST_SUITE(QueueTest, Impl);
+
+TYPED_TEST(QueueTest, DefaultConstructorCreatesEmptyQueue) {
+  EXPECT_TRUE(this->q_default.empty());
 }
 
-TEST_F(QueueTest, InitializerListConstructorCreatesQueue) {
-  EXPECT_FALSE(q_list.empty());
-  EXPECT_EQ(q_list.front(), 1);
+TYPED_TEST(QueueTest, InitializerListConstructorCreatesQueue) {
+  EXPECT_FALSE(this->q_list.empty());
+  EXPECT_EQ(this->q_list.front(), 1);
 }
 
-TEST_F(QueueTest, CopyConstructorCopiesQueue) {
-  queue<int> q_copy(q_list);
-  EXPECT_EQ(q_copy.front(), q_list.front());
+TYPED_TEST(QueueTest, CopyConstructorCopiesQueue) {
+  TypeParam q_copy(this->q_list);
+  EXPECT_EQ(q_copy.front(), this->q_list.front());
   EXPECT_FALSE(q_copy.empty());
 }
 
-TEST_F(QueueTest, MoveConstructorMovesQueue) {
-  queue<int> q_temp{4, 5};
-  queue<int> q_moved(std::move(q_temp));
+TYPED_TEST(QueueTest, MoveConstructorMovesQueue) {
+  TypeParam q_temp{4, 5};
+  TypeParam q_moved(std::move(q_temp));
   EXPECT_FALSE(q_moved.empty());
 }
 
-TEST_F(QueueTest, InitializerListAssignmentWorks) {
-  queue<int> q;
+TYPED_TEST(QueueTest, InitializerListAssignmentWorks) {
+  TypeParam q;
   q = {7, 8, 9};
   EXPECT_FALSE(q.empty());
   EXPECT_EQ(q.front(), 7);
 }
 
-TEST_F(QueueTest, CopyAssignmentWorks) {
-  queue<int> q;
-  q = q_list;
-  EXPECT_EQ(q.front(), q_list.front());
+TYPED_TEST(QueueTest, CopyAssignmentWorks) {
+  TypeParam q;
+  q = this->q_list;
+  EXPECT_EQ(q.front(), this->q_list.front());
 }
 
-TEST_F(QueueTest, MoveAssignmentWorks) {
-  queue<int> q_temp{10, 11};
-  queue<int> q;
+TYPED_TEST(QueueTest, MoveAssignmentWorks) {
+  TypeParam q_temp{10, 11};
+  TypeParam q;
   q = std::move(q_temp);
   EXPECT_FALSE(q.empty());
 }
 
-TEST_F(QueueTest, EnqueueAddsElement) {
-  q_default.enqueue(42);
-  q_default.enqueue(52);
-  q_default.enqueue(1);
-  q_default.enqueue(42);
-  EXPECT_FALSE(q_default.empty());
-  EXPECT_EQ(q_default.front(), 42);
+TYPED_TEST(QueueTest, EnqueueAddsElement) {
+  this->q_default.enqueue(42);
+  this->q_default.enqueue(52);
+  this->q_default.enqueue(1);
+  this->q_default.enqueue(42);
+  EXPECT_FALSE(this->q_default.empty());
+  EXPECT_EQ(this->q_default.front(), 42);
 }
 
-TEST_F(QueueTest, DequeueReturnsElementsFIFO) {
-  q_default.enqueue(1);
-  q_default.enqueue(2);
-  q_default.enqueue(42);
-  q_default.enqueue(52);
-  EXPECT_EQ(q_default.dequeue(), 1);
-  EXPECT_EQ(q_default.dequeue(), 2);
-  EXPECT_EQ(q_default.dequeue(), 42);
-  EXPECT_EQ(q_default.dequeue(), 52);
-  EXPECT_TRUE(q_default.empty());
+TYPED_TEST(QueueTest, DequeueReturnsElementsFIFO) {
+  this->q_default.enqueue(1);
+  this->q_default.enqueue(2);
+  this->q_default.enqueue(42);
+  this->q_default.enqueue(52);
+  EXPECT_EQ(this->q_default.dequeue(), 1);
+  EXPECT_EQ(this->q_default.dequeue(), 2);
+  EXPECT_EQ(this->q_default.dequeue(), 42);
+  EXPECT_EQ(this->q_default.dequeue(), 52);
+  EXPECT_TRUE(this->q_default.empty());
 }
 
-TEST_F(QueueTest, DequeueReturnsElementsFIFO2) {
-  q_default.enqueue(1);
-  q_default.enqueue(2);
-  EXPECT_EQ(q_default.dequeue(), 1);
-  q_default.enqueue(42);
-  q_default.enqueue(52);
-  EXPECT_EQ(q_default.dequeue(), 2);
-  EXPECT_EQ(q_default.dequeue(), 42);
-  q_default.enqueue(1);
-  EXPECT_EQ(q_default.dequeue(), 52);
-  EXPECT_EQ(q_default.dequeue(), 1);
-  EXPECT_TRUE(q_default.empty());
+TYPED_TEST(QueueTest, DequeueReturnsElementsFIFO2) {
+  this->q_default.enqueue(1);
+  this->q_default.enqueue(2);
+  EXPECT_EQ(this->q_default.dequeue(), 1);
+  this->q_default.enqueue(42);
+  this->q_default.enqueue(52);
+  EXPECT_EQ(this->q_default.dequeue(), 2);
+  EXPECT_EQ(this->q_default.dequeue(), 42);
+  this->q_default.enqueue(1);
+  EXPECT_EQ(this->q_default.dequeue(), 52);
+  EXPECT_EQ(this->q_default.dequeue(), 1);
+  EXPECT_TRUE(this->q_default.empty());
 }
 
-TEST_F(QueueTest, FrontReturnsCurrentFirstElement) {
-  q_default.enqueue(5);
-  EXPECT_EQ(q_default.front(), 5);
-  q_default.enqueue(6);
-  EXPECT_EQ(q_default.front(), 5);
-  q_default.dequeue();
-  EXPECT_EQ(q_default.front(), 6);
-}
-
-class QueueStackTest : public ::testing::Test {
-protected:
-  queue_stack<int> q_default;
-  queue_stack<int> q_list{1, 2, 3};
-};
-
-TEST_F(QueueStackTest, DefaultConstructorCreatesEmptyQueue) {
-  EXPECT_TRUE(q_default.empty());
-}
-
-TEST_F(QueueStackTest, InitializerListConstructorCreatesQueue) {
-  EXPECT_FALSE(q_list.empty());
-  EXPECT_EQ(q_list.front(), 1);
-}
-
-TEST_F(QueueStackTest, CopyConstructorCopiesQueue) {
-  queue_stack<int> q_copy(q_list);
-  EXPECT_EQ(q_copy.front(), q_list.front());
-  EXPECT_FALSE(q_copy.empty());
-}
-
-TEST_F(QueueStackTest, MoveConstructorMovesQueue) {
-  queue_stack<int> q_temp{4, 5};
-  queue_stack<int> q_moved(std::move(q_temp));
-  EXPECT_FALSE(q_moved.empty());
-}
-
-TEST_F(QueueStackTest, InitializerListAssignmentWorks) {
-  queue_stack<int> q;
-  q = {7, 8, 9};
-  EXPECT_FALSE(q.empty());
-  EXPECT_EQ(q.front(), 7);
-}
-
-TEST_F(QueueStackTest, CopyAssignmentWorks) {
-  queue_stack<int> q;
-  q = q_list;
-  EXPECT_EQ(q.front(), q_list.front());
-}
-
-TEST_F(QueueStackTest, MoveAssignmentWorks) {
-  queue_stack<int> q_temp{10, 11};
-  queue_stack<int> q;
-  q = std::move(q_temp);
-  EXPECT_FALSE(q.empty());
-}
-
-TEST_F(QueueStackTest, EnqueueAddsElement) {
-  q_default.enqueue(42);
-  q_default.enqueue(52);
-  q_default.enqueue(1);
-  q_default.enqueue(42);
-  EXPECT_FALSE(q_default.empty());
-  EXPECT_EQ(q_default.front(), 42);
-}
-
-TEST_F(QueueStackTest, DequeueReturnsElementsFIFO) {
-  q_default.enqueue(1);
-  q_default.enqueue(2);
-  q_default.enqueue(42);
-  q_default.enqueue(52);
-  EXPECT_EQ(q_default.dequeue(), 1);
-  EXPECT_EQ(q_default.dequeue(), 2);
-  EXPECT_EQ(q_default.dequeue(), 42);
-  EXPECT_EQ(q_default.dequeue(), 52);
-  EXPECT_TRUE(q_default.empty());
-}
-
-TEST_F(QueueStackTest, DequeueReturnsElementsFIFO2) {
-  q_default.enqueue(1);
-  q_default.enqueue(2);
-  EXPECT_EQ(q_default.dequeue(), 1);
-  q_default.enqueue(42);
-  q_default.enqueue(52);
-  EXPECT_EQ(q_default.dequeue(), 2);
-  EXPECT_EQ(q_default.dequeue(), 42);
-  q_default.enqueue(1);
-  EXPECT_EQ(q_default.dequeue(), 52);
-  EXPECT_EQ(q_default.dequeue(), 1);
-  EXPECT_TRUE(q_default.empty());
-}
-
-TEST_F(QueueStackTest, FrontReturnsCurrentFirstElement) {
-  q_default.enqueue(5);
-  EXPECT_EQ(q_default.front(), 5);
-  q_default.enqueue(6);
-  EXPECT_EQ(q_default.front(), 5);
-  q_default.dequeue();
-  EXPECT_EQ(q_default.front(), 6);
+TYPED_TEST(QueueTest, FrontReturnsCurrentFirstElement) {
+  this->q_default.enqueue(5);
+  EXPECT_EQ(this->q_default.front(), 5);
+  this->q_default.enqueue(6);
+  EXPECT_EQ(this->q_default.front(), 5);
+  this->q_default.dequeue();
+  EXPECT_EQ(this->q_default.front(), 6);
 }
 
 class Deque : public ::testing::Test {
@@ -189,82 +103,6 @@ protected:
   deque<int> q_default;
   deque<int> q_list{1, 2, 3};
 };
-
-TEST_F(Deque, DefaultConstructorCreatesEmptyQueue) {
-  EXPECT_TRUE(q_default.empty());
-}
-
-TEST_F(Deque, InitializerListConstructorCreatesQueue) {
-  EXPECT_FALSE(q_list.empty());
-  EXPECT_EQ(q_list.front(), 1);
-}
-
-TEST_F(Deque, CopyConstructorCopiesQueue) {
-  deque<int> q_copy(q_list);
-  EXPECT_EQ(q_copy.front(), q_list.front());
-  EXPECT_FALSE(q_copy.empty());
-}
-
-TEST_F(Deque, MoveConstructorMovesQueue) {
-  deque<int> q_temp{4, 5};
-  deque<int> q_moved(std::move(q_temp));
-  EXPECT_FALSE(q_moved.empty());
-}
-
-TEST_F(Deque, InitializerListAssignmentWorks) {
-  deque<int> q;
-  q = {7, 8, 9};
-  EXPECT_FALSE(q.empty());
-  EXPECT_EQ(q.front(), 7);
-}
-
-TEST_F(Deque, CopyAssignmentWorks) {
-  deque<int> q;
-  q = q_list;
-  EXPECT_EQ(q.front(), q_list.front());
-}
-
-TEST_F(Deque, MoveAssignmentWorks) {
-  deque<int> q_temp{10, 11};
-  deque<int> q;
-  q = std::move(q_temp);
-  EXPECT_FALSE(q.empty());
-}
-
-TEST_F(Deque, EnqueueAddsElement) {
-  q_default.enqueue(42);
-  q_default.enqueue(52);
-  q_default.enqueue(1);
-  q_default.enqueue(42);
-  EXPECT_FALSE(q_default.empty());
-  EXPECT_EQ(q_default.front(), 42);
-}
-
-TEST_F(Deque, DequeueReturnsElementsFIFO) {
-  q_default.enqueue(1);
-  q_default.enqueue(2);
-  q_default.enqueue(42);
-  q_default.enqueue(52);
-  EXPECT_EQ(q_default.dequeue(), 1);
-  EXPECT_EQ(q_default.dequeue(), 2);
-  EXPECT_EQ(q_default.dequeue(), 42);
-  EXPECT_EQ(q_default.dequeue(), 52);
-  EXPECT_TRUE(q_default.empty());
-}
-
-TEST_F(Deque, DequeueReturnsElementsFIFO2) {
-  q_default.enqueue(1);
-  q_default.enqueue(2);
-  EXPECT_EQ(q_default.dequeue(), 1);
-  q_default.enqueue(42);
-  q_default.enqueue(52);
-  EXPECT_EQ(q_default.dequeue(), 2);
-  EXPECT_EQ(q_default.dequeue(), 42);
-  q_default.enqueue(1);
-  EXPECT_EQ(q_default.dequeue(), 52);
-  EXPECT_EQ(q_default.dequeue(), 1);
-  EXPECT_TRUE(q_default.empty());
-}
 
 TEST_F(Deque, EnqueueFrontAddsElementAtFront) {
   q_default.enqueue_front(10);
@@ -290,15 +128,6 @@ TEST_F(Deque, BackReturnsLastElementWithoutRemoving) {
   int last = q_default.back();
   EXPECT_EQ(last, 7);
   EXPECT_EQ(q_default.back(), last);
-}
-
-TEST_F(Deque, FrontReturnsCurrentFirstElement) {
-  q_default.enqueue(5);
-  EXPECT_EQ(q_default.front(), 5);
-  q_default.enqueue(6);
-  EXPECT_EQ(q_default.front(), 5);
-  q_default.dequeue();
-  EXPECT_EQ(q_default.front(), 6);
 }
 
 int main(int argc, char **argv) {
