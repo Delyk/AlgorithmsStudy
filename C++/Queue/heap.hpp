@@ -7,6 +7,7 @@
 //Двоичная куча
 template <typename T> class binary_heap {
   std::vector<T> array;
+  void heapify(std::vector<T> &array, std::size_t size, std::size_t root);
 
 public:
   binary_heap();
@@ -24,6 +25,9 @@ public:
   void insert(T);
   T extractMax();
 };
+
+//Биномиальная куча
+template <typename T> class binomial_heap {};
 
 /*** Методы двоичной кучи ***/
 //Конструкторы
@@ -92,6 +96,32 @@ void binary_heap<T>::heapify(std::vector<T> &array, std::size_t root) {
       std::swap(array[root], array[largest]);
       root = largest;
     } else {
+      //Иначе значит у корня нет потомков, выходим из цикла
+      break;
+    }
+  }
+}
+
+template <typename T>
+void binary_heap<T>::heapify(std::vector<T> &array, std::size_t size,
+                             std::size_t root) {
+  std::size_t largest = root;
+  while (true) {
+    std::size_t left = 2 * root + 1;
+    std::size_t right = 2 * root + 2;
+
+    if (left < size && array[left] > array[largest]) {
+      largest = left;
+    }
+
+    if (right < size && array[right] > array[largest]) {
+      largest = right;
+    }
+
+    if (largest != root) {
+      std::swap(array[root], array[largest]);
+      root = largest;
+    } else {
       break;
     }
   }
@@ -99,7 +129,8 @@ void binary_heap<T>::heapify(std::vector<T> &array, std::size_t root) {
 
 //Построение кучи
 template <typename T> void binary_heap<T>::build_heap(std::vector<T> &arr) {
-  //Начиная с самого старшего корня снизу вверх создаём кучу
+  //Начиная с самого старшего корня, у которого есть потомки, снизу вверх
+  //создаём кучу
   for (int i = arr.size() / 2 - 1; i >= 0; i--) {
     heapify(arr, i);
   }
@@ -109,9 +140,11 @@ template <typename T> void binary_heap<T>::build_heap(std::vector<T> &arr) {
 template <typename T> void binary_heap<T>::increase_key(std::size_t i, T data) {
   array[i] = data;
   //Поднимаем элемент вверх по дереву
-  while (i > 0 && array[(i - 1) / 2] < array[i]) {
-    std::swap(array[(i - 1) / 2], array[i]);
-    i = (i - 1) / 2;
+  int next = (i - 1) / 2;
+  while (i > 0 && array[next] < array[i]) {
+    std::swap(array[next], array[i]);
+    i = next;
+    next = (i - 1) / 2;
   }
 }
 
@@ -125,6 +158,7 @@ template <typename T> void binary_heap<T>::insert(T data) {
 template <typename T> T binary_heap<T>::extractMax() {
   T max = array[0];
   array[0] = array[array.size() - 1];
+  array.pop_back();
   heapify(this->array, 0);
   return max;
 }
@@ -134,6 +168,6 @@ template <typename T> void binary_heap<T>::heapsort(std::vector<T> &arr) {
   build_heap(arr);
   for (int i = arr.size() - 1; i >= 0; i--) {
     std::swap(arr[0], arr[i]);
-    heapify(arr, 0);
+    heapify(arr, i, 0); //Просеиваем меньший элемент вниз, исключая самый нижний
   }
 }

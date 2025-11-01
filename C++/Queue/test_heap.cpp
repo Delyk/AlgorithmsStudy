@@ -17,6 +17,11 @@ TYPED_TEST(HeapTest, ListConstructor) {
   EXPECT_EQ(this->heap_init.extractMax(), 3);
 }
 
+TYPED_TEST(HeapTest, BasicHeap) {
+  TypeParam heap{1, 2, 3, 4, 5, 6, 7, 8, 9};
+  EXPECT_EQ(heap.extractMax(), 9);
+}
+
 TYPED_TEST(HeapTest, CopyConstructor) {
   TypeParam copy{this->heap_init};
   EXPECT_EQ(copy.extractMax(), 3);
@@ -62,9 +67,10 @@ TYPED_TEST(HeapTest, InreaseKey) {
   EXPECT_EQ(this->heap.extractMax(), 10);
 }
 
-TYPED_TEST(HeapTest, Heapsort) {
+TEST(HeapSort, Heapsort) {
+  binary_heap<int> heap;
   std::vector<int> data = {4, 1, 3, 2, 16, 9, 10, 14, 8, 7};
-  this->heap.heapsort(data);
+  heap.heapsort(data);
   for (size_t i = 1; i < data.size(); i++) {
     EXPECT_LE(data[i - 1], data[i]);
   }
