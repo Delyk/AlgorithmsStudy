@@ -35,11 +35,16 @@ template <typename T> class binomial_heap {
     std::shared_ptr<Node> child;
     std::shared_ptr<Node> sibling;
     int degree;
-    void add(std::shared_ptr<Node>);
+    Node(T key) : parent(nullptr), child(nullptr), sibling(nullptr) {}
+    void add(std::shared_ptr<Node> node) {
+      this->sibling = node;
+      node->parent = this;
+    }
   };
   std::shared_ptr<Node> head;
 
-  std::shared_ptr<Node> link(std::shared_ptr<Node>, std::shared_ptr<Node>);
+  std::shared_ptr<Node> mergeSort(std::shared_ptr<Node>, std::shared_ptr<Node>);
+  void link(std::shared_ptr<Node>, std::shared_ptr<Node>);
 
 public:
   binomial_heap(std::shared_ptr<Node>);
@@ -191,73 +196,64 @@ template <typename T> void binary_heap<T>::heapsort(std::vector<T> &arr) {
   }
 }
 /*** Методы биномиальной кучи ***/
+// Merge для списка деревьев
+template <typename T>
+std::shared_ptr<typename binomial_heap<T>::Node>
+binomial_heap<T>::mergeSort(std::shared_ptr<Node> left,
+                            std::shared_ptr<Node> right) {
+  std::shared_ptr<Node> result;
+  std::shared_ptr<Node> prev_result = nullptr;
+  std::shared_ptr<Node> head = result;
+  while (left || right) {
+    if (left->degree <= right->degree) {
+      result = left;
+      left = left->sibling;
+    } else {
+      result = right;
+      right = right->sibling;
+    }
+    result->parent = prev_result;
+    prev_result = result;
+    result = result->sibling;
+  }
+  if (left) {
+    result->sibling = left;
+  }
+  if (right) {
+    result->sibling = right;
+  }
+  return head;
+}
 
 // Объединение деревьев
 template <typename T>
-std::shared_ptr<typename binomial_heap<T>::Node>
-binomial_heap<T>::link(std::shared_ptr<Node> left,
-                       std::shared_ptr<Node> right) {
-  // if (left->key >= right->key) {
-  //   left->parent = right;
-  //   left->sibling = right->child;
-  //   right->child = left;
-  //   right->degree++;
-  //   left = right->sibling;
-  //   return right;
-  // } else {
-  //   right->parent = left;
-  //   right->sibling = right;
-  //   left->child = right;
-  //   left->degree++;
-  //   right = left->sibling;
-  //   return left;
-  // }
-  if (left->key <= right->key) {
-    right->parent = left;
-    right->sibling = left->child;
-    left->child = right;
-    left->degree++;
-    return left;
-  } else {
-    left->parent = right;
-    left->sibling = right->child;
-    right->child = left;
-    right->degree++;
-    return right;
-  }
+void binomial_heap<T>::link(std::shared_ptr<Node> left,
+                            std::shared_ptr<Node> right) {
+  left->sibling = right->sibling;
+  right->sibling = left->child;
+  right->parent = left;
+  left->child = right;
+  left->degree++;
 }
 
-// Слияние куч (через merge sort)
+// Объединяем списки, после сливаем одинаковые деревья
 template <typename T> void binomial_heap<T>::merge(binomial_heap<T> &other) {
-  if (other.empty() || this->empty()) {
-    return;
-  }
+  this->head = mergeSort(this->head, other.head);
+  std::shared_ptr<Node> cursor = this->head->sibling;
+  std::shared_ptr<Node> prev_cursor = this->head;
 
-  std::shared_ptr<Node> new_head;
-  std::shared_ptr<Node> left = this->head;
-  std::shared_ptr<Node> right = other.head;
-  while (left || right) {
-    if (left->degree > right->degree) {
-      new_head->add(right);
-      left = left->sibling;
-    } else if (left->degree < right->degree) {
-      new_head->add(left);
-      right = right->sibling;
-    } else {
-      new_head->add(link(left, right));
+  while (cursor->sibling) {
+    if (prev_cursor->degree == cursor->degree) {
+      if (cursor->sibling->degree != cursor->degree) {
+        if (cursor->key > prev_cursor->key) {
+          std::shared_ptr<Node> tmp = cursor;
+          cursor = prev_cursor;
+          prev_cursor = tmp;
+        }
+        link(cursor, prev_cursor);
+      }
     }
-    new_head = new_head->sibling;
-  }
-  if (left) {
-    while (left) {
-      new_head->add(left);
-      left = left->sibling;
-    }
-  }
-  if (right) {
-    while (right) {
-      new_head->add(right);
-      right = right->sibling;
-    }
+    prev_cursor = cursor;
+    cursor = cursor->sibling;
   }
 }
