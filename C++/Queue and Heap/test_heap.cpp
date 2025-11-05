@@ -76,6 +76,18 @@ TEST(HeapSort, Heapsort) {
   }
 }
 
+class bin_heap : public ::testing::Test {
+protected:
+  binomial_heap<int> heap;
+};
+
+TEST_F(bin_heap, test_name) {
+  heap.insert(9);
+  heap.insert(2);
+  heap.insert(3);
+  EXPECT_EQ(heap.getMin(), 2);
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
