@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <ctime>
 #include <initializer_list>
 #include <memory>
 #include <utility>
@@ -36,7 +37,8 @@ template <typename T> class binomial_heap {
     std::shared_ptr<Node> child;
     std::shared_ptr<Node> sibling;
     int degree;
-    Node(T key) : key(key), parent(nullptr), child(nullptr), sibling(nullptr) {}
+    Node(T key = T{})
+        : key(key), parent(nullptr), child(nullptr), sibling(nullptr) {}
     void add(std::shared_ptr<Node> node) {}
     void delete_this() {}
   };
@@ -45,6 +47,7 @@ template <typename T> class binomial_heap {
   std::shared_ptr<Node> findMin() const;
   std::shared_ptr<Node> mergeSort(std::shared_ptr<Node>, std::shared_ptr<Node>);
   void link(std::shared_ptr<Node>, std::shared_ptr<Node>);
+  void swap(std::shared_ptr<Node>, std::shared_ptr<Node>);
 
 public:
   binomial_heap();
@@ -211,28 +214,23 @@ template <typename T>
 std::shared_ptr<typename binomial_heap<T>::Node>
 binomial_heap<T>::mergeSort(std::shared_ptr<Node> left,
                             std::shared_ptr<Node> right) {
-  std::shared_ptr<Node> result;
-  std::shared_ptr<Node> prev_result = nullptr;
-  std::shared_ptr<Node> head = result;
+  std::shared_ptr<Node> result = nullptr;
+  std::shared_ptr<Node> *cursor = &result;
+
   while (left && right) {
     if (left->degree <= right->degree) {
-      result = left;
+      *cursor = left;
       left = left->sibling;
     } else {
-      result = right;
+      *cursor = right;
       right = right->sibling;
     }
-    result->parent = prev_result;
-    prev_result = result;
-    result = result->sibling;
+    cursor = &((*cursor)->sibling);
   }
-  if (left) {
-    result->sibling = left;
-  }
-  if (right) {
-    result->sibling = right;
-  }
-  return head;
+
+  *cursor = left ? left : right;
+
+  return result;
 }
 
 // Объединение деревьев
@@ -241,30 +239,42 @@ void binomial_heap<T>::link(std::shared_ptr<Node> left,
                             std::shared_ptr<Node> right) {
   left->sibling = right->sibling;
   right->sibling = left->child;
-  right->parent = left;
   left->child = right;
   left->degree++;
+}
+
+//Поменять элементы местами
+template <typename T>
+void binomial_heap<T>::swap(std::shared_ptr<Node> left,
+                            std::shared_ptr<Node> right) {
+  std::shared_ptr<Node> tmp = left->parent;
+  left->parent = right;
+  left->sibling = right->sibling;
+
+  right->parent = tmp;
+  right->sibling = left;
 }
 
 // Объединяем списки, после сливаем одинаковые деревья
 template <typename T> void binomial_heap<T>::merge(binomial_heap<T> &other) {
   this->head = mergeSort(this->head, other.head);
-  std::shared_ptr<Node> cursor = this->head->sibling;
-  std::shared_ptr<Node> prev_cursor = this->head;
+  std::shared_ptr<Node> cursor = this->head;
 
   while (cursor->sibling) {
-    if (prev_cursor->degree == cursor->degree) {
-      if (cursor->sibling->degree != cursor->degree) {
-        if (cursor->key > prev_cursor->key) {
-          std::shared_ptr<Node> tmp = cursor;
-          cursor = prev_cursor;
-          prev_cursor = tmp;
+    if (cursor->degree == cursor->sibling->degree) {
+      if (cursor->key > cursor->sibling->key) {
+        swap(cursor, cursor->sibling);
+        if (cursor == head) {
+          head = cursor->parent;
         }
-        link(cursor, prev_cursor);
+        cursor = cursor->parent;
       }
+      link(cursor, cursor->sibling);
     }
-    prev_cursor = cursor;
     cursor = cursor->sibling;
+    if (!cursor) {
+      break;
+    }
   }
 }
 
