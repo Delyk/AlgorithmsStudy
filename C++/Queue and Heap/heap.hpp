@@ -3,6 +3,7 @@
 #include <ctime>
 #include <initializer_list>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 //Двоичная куча, биномиальная куча, левая куча, фибоначчиева куча
@@ -40,7 +41,22 @@ template <typename T> class binomial_heap {
     Node(T key = T{})
         : key(key), parent(nullptr), child(nullptr), sibling(nullptr) {}
     void add(std::shared_ptr<Node> node) {}
-    void delete_this() {}
+    void delete_this() {
+      if (parent) {
+        parent->sibling = sibling;
+      }
+      if (child) {
+        child->parent = nullptr;
+      }
+    }
+    void clear() {
+      parent = nullptr;
+      child = nullptr;
+      sibling = nullptr;
+      key = T{};
+      degree = 0;
+    }
+    ~Node() { this->clear(); }
   };
   std::shared_ptr<Node> head;
 
@@ -52,10 +68,12 @@ template <typename T> class binomial_heap {
 public:
   binomial_heap();
   binomial_heap(T);
+  binomial_heap(std::shared_ptr<Node> &);
   T extractMin();
   T getMin() const;
   void merge(binomial_heap<T> &);
   void insert(T);
+  bool empty() const;
 };
 
 /*** Методы двоичной кучи ***/
@@ -209,6 +227,11 @@ template <typename T> binomial_heap<T>::binomial_heap(T val) {
   this->head = std::make_shared<Node>(val);
 }
 
+template <typename T>
+binomial_heap<T>::binomial_heap(
+    std::shared_ptr<typename binomial_heap<T>::Node> &node)
+    : head(node) {}
+
 // Merge для списка деревьев
 template <typename T>
 std::shared_ptr<typename binomial_heap<T>::Node>
@@ -239,6 +262,7 @@ void binomial_heap<T>::link(std::shared_ptr<Node> left,
                             std::shared_ptr<Node> right) {
   left->sibling = right->sibling;
   right->sibling = left->child;
+  right->parent = left;
   left->child = right;
   left->degree++;
 }
@@ -261,6 +285,7 @@ template <typename T> void binomial_heap<T>::merge(binomial_heap<T> &other) {
   std::shared_ptr<Node> cursor = this->head;
 
   while (cursor->sibling) {
+    cursor->sibling->parent = cursor;
     if (cursor->degree == cursor->sibling->degree) {
       if (cursor->key > cursor->sibling->key) {
         swap(cursor, cursor->sibling);
@@ -270,8 +295,9 @@ template <typename T> void binomial_heap<T>::merge(binomial_heap<T> &other) {
         cursor = cursor->parent;
       }
       link(cursor, cursor->sibling);
+    } else {
+      cursor = cursor->sibling;
     }
-    cursor = cursor->sibling;
     if (!cursor) {
       break;
     }
@@ -288,6 +314,9 @@ template <typename T> void binomial_heap<T>::insert(T val) {
 template <typename T>
 std::shared_ptr<typename binomial_heap<T>::Node>
 binomial_heap<T>::findMin() const {
+  if (!head) {
+    throw std::runtime_error("Empty heap");
+  }
   std::shared_ptr<Node> cur = head->sibling;
   std::shared_ptr<Node> min = head;
   while (cur) {
@@ -306,15 +335,25 @@ template <typename T> T binomial_heap<T>::getMin() const {
 
 //Извлечь минимальный
 template <typename T> T binomial_heap<T>::extractMin() {
+  if (!head) {
+    throw std::runtime_error("Empty heap");
+  }
   std::shared_ptr<Node> min = findMin();
   std::shared_ptr<Node> local_head = min->child;
   T min_key = min->key;
+  if (min == head) {
+    head = head->sibling;
+  }
   min->delete_this();
   min = nullptr;
 
   if (local_head) {
-    this->merge(local_head);
+    binomial_heap<T> tmp(local_head);
+    this->merge(tmp);
   }
 
   return min_key;
 }
+
+//Проверка на пустоту
+template <typename T> bool binomial_heap<T>::empty() const { return !head; }

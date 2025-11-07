@@ -81,11 +81,184 @@ protected:
   binomial_heap<int> heap;
 };
 
-TEST_F(bin_heap, test_name) {
+TEST_F(bin_heap, GetMin) { EXPECT_ANY_THROW(heap.getMin()); }
+
+TEST_F(bin_heap, OneInsert) {
+  heap.insert(10);
+  EXPECT_EQ(heap.getMin(), 10);
+}
+
+TEST_F(bin_heap, InsertTest) {
   heap.insert(9);
   heap.insert(2);
   heap.insert(3);
   EXPECT_EQ(heap.getMin(), 2);
+}
+TEST_F(bin_heap, InsertTestMinFirst) {
+  heap.insert(1);
+  heap.insert(2);
+  heap.insert(3);
+  heap.insert(4);
+  heap.insert(5);
+  EXPECT_EQ(heap.getMin(), 1);
+}
+
+TEST_F(bin_heap, InsertTestMinLast) {
+  heap.insert(5);
+  heap.insert(4);
+  heap.insert(3);
+  heap.insert(2);
+  heap.insert(1);
+  EXPECT_EQ(heap.getMin(), 1);
+}
+
+TEST_F(bin_heap, InsertTestMinMiddle) {
+  heap.insert(3);
+  heap.insert(2);
+  heap.insert(-1);
+  heap.insert(4);
+  heap.insert(5);
+  EXPECT_EQ(heap.getMin(), -1);
+}
+
+TEST_F(bin_heap, InsertTestSomeEqual) {
+  heap.insert(3);
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(5);
+  EXPECT_EQ(heap.getMin(), 1);
+}
+
+TEST_F(bin_heap, InsertTestAllEqual) {
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(1);
+  EXPECT_EQ(heap.getMin(), 1);
+}
+
+TEST_F(bin_heap, InsertTestSomeEqualFirst) {
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(2);
+  heap.insert(3);
+  EXPECT_EQ(heap.getMin(), 1);
+}
+
+TEST_F(bin_heap, InsertTestSomeEqualLast) {
+  heap.insert(2);
+  heap.insert(3);
+  heap.insert(1);
+  heap.insert(1);
+  EXPECT_EQ(heap.getMin(), 1);
+}
+
+TEST_F(bin_heap, InsertTestBig) {
+  for (int i = 100; i >= -1; i--) {
+    heap.insert(i);
+  }
+  EXPECT_EQ(heap.getMin(), -1);
+}
+
+TEST_F(bin_heap, ExtractEmpty) { EXPECT_ANY_THROW(heap.extractMin()); }
+
+TEST_F(bin_heap, OneExtract) {
+  heap.insert(10);
+  EXPECT_FALSE(heap.empty());
+  EXPECT_EQ(heap.extractMin(), 10);
+  EXPECT_TRUE(heap.empty());
+}
+
+TEST_F(bin_heap, BasicExtract) {
+  heap.insert(9);
+  heap.insert(2);
+  heap.insert(3);
+  EXPECT_EQ(heap.extractMin(), 2);
+  EXPECT_EQ(heap.getMin(), 3);
+}
+TEST_F(bin_heap, ExtractMinFirst) {
+  heap.insert(1);
+  heap.insert(2);
+  heap.insert(3);
+  heap.insert(4);
+  heap.insert(5);
+  EXPECT_EQ(heap.extractMin(), 1);
+  EXPECT_EQ(heap.getMin(), 2);
+}
+
+TEST_F(bin_heap, ExtractMinLast) {
+  heap.insert(5);
+  heap.insert(4);
+  heap.insert(3);
+  heap.insert(2);
+  heap.insert(1);
+  EXPECT_EQ(heap.extractMin(), 1);
+  EXPECT_EQ(heap.getMin(), 2);
+}
+
+TEST_F(bin_heap, ExtractSome) {
+  heap.insert(3);
+  heap.insert(2);
+  heap.insert(-1);
+  heap.insert(4);
+  heap.insert(5);
+  EXPECT_EQ(heap.extractMin(), -1);
+  EXPECT_EQ(heap.extractMin(), 2);
+  EXPECT_EQ(heap.extractMin(), 3);
+  EXPECT_EQ(heap.getMin(), 4);
+}
+
+TEST_F(bin_heap, ExtractSomeEqual) {
+  heap.insert(3);
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(5);
+  EXPECT_EQ(heap.extractMin(), 1);
+  EXPECT_EQ(heap.extractMin(), 1);
+  EXPECT_EQ(heap.extractMin(), 1);
+  EXPECT_EQ(heap.getMin(), 3);
+}
+
+TEST_F(bin_heap, ExtractAll) {
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(1);
+  EXPECT_EQ(heap.extractMin(), 1);
+  EXPECT_EQ(heap.extractMin(), 1);
+  EXPECT_EQ(heap.extractMin(), 1);
+  EXPECT_TRUE(heap.empty());
+  EXPECT_ANY_THROW(heap.getMin());
+}
+
+TEST_F(bin_heap, ExtractSomeEqualFirst) {
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(2);
+  heap.insert(3);
+  EXPECT_EQ(heap.extractMin(), 1);
+  EXPECT_EQ(heap.extractMin(), 1);
+  EXPECT_EQ(heap.getMin(), 2);
+}
+
+TEST_F(bin_heap, ExtractSomeEqualLast) {
+  heap.insert(2);
+  heap.insert(3);
+  heap.insert(1);
+  heap.insert(1);
+  EXPECT_EQ(heap.extractMin(), 1);
+  EXPECT_EQ(heap.extractMin(), 1);
+  EXPECT_EQ(heap.getMin(), 2);
+}
+
+TEST_F(bin_heap, ExtractAllBig) {
+  for (int i = 100; i >= -1; i--) {
+    heap.insert(i);
+  }
+  for (int i = -1; i <= 100; i++) {
+    EXPECT_EQ(heap.extractMin(), i);
+  }
+  EXPECT_TRUE(heap.empty());
 }
 
 int main(int argc, char **argv) {
