@@ -79,6 +79,7 @@ TEST(HeapSort, Heapsort) {
 class bin_heap : public ::testing::Test {
 protected:
   binomial_heap<int> heap;
+  binomial_heap<int> heap_init{5, 4, -1, 2, 3, 1, 0};
 };
 
 TEST_F(bin_heap, GetMin) { EXPECT_ANY_THROW(heap.getMin()); }
@@ -176,6 +177,7 @@ TEST_F(bin_heap, BasicExtract) {
   EXPECT_EQ(heap.extractMin(), 2);
   EXPECT_EQ(heap.getMin(), 3);
 }
+
 TEST_F(bin_heap, ExtractMinFirst) {
   heap.insert(1);
   heap.insert(2);
@@ -259,6 +261,55 @@ TEST_F(bin_heap, ExtractAllBig) {
     EXPECT_EQ(heap.extractMin(), i);
   }
   EXPECT_TRUE(heap.empty());
+}
+
+TEST_F(bin_heap, decreaseKeyBasic) {
+  heap_init.decrease_key(-10, heap_init.find(5));
+  EXPECT_EQ(heap_init.extractMin(), -10);
+  EXPECT_EQ(heap_init.extractMin(), 0);
+  EXPECT_EQ(heap_init.getMin(), 1);
+}
+
+TEST_F(bin_heap, decreaseKeyEqual) {
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(1);
+  heap.decrease_key(-1, heap.find(1));
+  EXPECT_EQ(heap.extractMin(), -1);
+  EXPECT_EQ(heap.getMin(), 1);
+}
+
+TEST_F(bin_heap, decreaseKeySameMid) {
+  heap.insert(3);
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(3);
+  heap.decrease_key(-1, heap.find(1));
+  EXPECT_EQ(heap.extractMin(), -1);
+  EXPECT_EQ(heap.getMin(), 1);
+}
+
+TEST_F(bin_heap, decreaseKeySameEnd) {
+  heap.insert(3);
+  heap.insert(2);
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(1);
+  heap.decrease_key(-1, heap.find(1));
+  EXPECT_EQ(heap.extractMin(), -1);
+  EXPECT_EQ(heap.getMin(), 1);
+}
+
+TEST_F(bin_heap, decreaseKeySameBegin) {
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(1);
+  heap.insert(3);
+  heap.insert(2);
+  heap.decrease_key(-1, heap.find(1));
+  EXPECT_EQ(heap.extractMin(), -1);
+  EXPECT_EQ(heap.getMin(), 1);
 }
 
 int main(int argc, char **argv) {
