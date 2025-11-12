@@ -39,14 +39,14 @@ TYPED_TEST(HeapTest, AssignmentOperatorInitializerList) {
 }
 
 TYPED_TEST(HeapTest, CopyAssignmentOperator) {
-  TypeParam copy;
+  TypeParam copy{6, 7, 8};
   copy = this->heap_init;
   EXPECT_EQ(copy.extractMax(), 3);
 }
 
 TYPED_TEST(HeapTest, MoveAssignmentOperator) {
   TypeParam temp{13, 14, 15};
-  TypeParam moved;
+  TypeParam moved{16, 17, 18};
   moved = std::move(temp);
   EXPECT_EQ(moved.extractMax(), 15);
 }
@@ -83,6 +83,49 @@ protected:
 };
 
 TEST_F(bin_heap, GetMin) { EXPECT_ANY_THROW(heap.getMin()); }
+
+TEST_F(bin_heap, CopyConstructor) {
+  binomial_heap<int> hp{1, 2, 3};
+  binomial_heap<int> hp1(hp);
+  std::vector<int> last{1, 2, 3};
+  for (auto i : last) {
+    EXPECT_EQ(hp1.extractMin(), i);
+  }
+}
+
+TEST_F(bin_heap, MoveConstructor) {
+  binomial_heap<int> hp{1, 2, 3};
+  binomial_heap<int> hp1(std::move(hp));
+  std::vector<int> last{1, 2, 3};
+  EXPECT_TRUE(hp.empty());
+  EXPECT_ANY_THROW(hp.getMin());
+  EXPECT_ANY_THROW(hp.extractMin());
+  for (auto i : last) {
+    EXPECT_EQ(hp1.extractMin(), i);
+  }
+}
+
+TEST_F(bin_heap, CopyAssignment) {
+  binomial_heap<int> hp{1, 2, 3};
+  binomial_heap<int> hp1{5, 6, 7};
+  hp1 = hp;
+  while (!hp.empty()) {
+    EXPECT_EQ(hp1.extractMin(), hp.extractMin());
+  }
+}
+
+TEST_F(bin_heap, MoveAssignment) {
+  binomial_heap<int> hp{1, 2, 3};
+  binomial_heap<int> hp1{5, 6, 7};
+  std::vector<int> last{1, 2, 3};
+  hp1 = std::move(hp);
+  EXPECT_TRUE(hp.empty());
+  EXPECT_ANY_THROW(hp.getMin());
+  EXPECT_ANY_THROW(hp.extractMin());
+  for (auto i : last) {
+    EXPECT_EQ(hp1.extractMin(), i);
+  }
+}
 
 TEST_F(bin_heap, OneInsert) {
   heap.insert(10);
@@ -310,6 +353,52 @@ TEST_F(bin_heap, decreaseKeySameBegin) {
   heap.decrease_key(-1, heap.find(1));
   EXPECT_EQ(heap.extractMin(), -1);
   EXPECT_EQ(heap.getMin(), 1);
+}
+
+TEST_F(bin_heap, decreaseKeyMany) {
+  heap.insert(1);
+  heap.insert(2);
+  heap.insert(3);
+  heap.decrease_key(-1, heap.find(1));
+  heap.decrease_key(-2, heap.find(2));
+  heap.decrease_key(-3, heap.find(3));
+  EXPECT_EQ(heap.getMin(), -3);
+  EXPECT_EQ(heap.extractMin(), -3);
+  EXPECT_EQ(heap.getMin(), -2);
+  EXPECT_EQ(heap.extractMin(), -2);
+  EXPECT_EQ(heap.getMin(), -1);
+  EXPECT_EQ(heap.extractMin(), -1);
+  EXPECT_TRUE(heap.empty());
+}
+
+TEST_F(bin_heap, decreaseKeyEncrease) {
+  heap.insert(1);
+  heap.insert(2);
+  heap.insert(3);
+  heap.decrease_key(4, heap.find(3));
+  EXPECT_EQ(heap.getMin(), 1);
+  EXPECT_EQ(heap.extractMin(), 1);
+}
+
+TEST_F(bin_heap, deleteKeySimple) {
+  heap.insert(1);
+  heap.deleteKey(1);
+  EXPECT_TRUE(heap.empty());
+}
+
+TEST_F(bin_heap, deleteKeyBasic) {
+  heap_init.deleteKey(-1);
+  EXPECT_EQ(heap_init.getMin(), 0);
+}
+
+TEST_F(bin_heap, deleteKeyMany) {
+  heap_init.deleteKey(0);
+  heap_init.deleteKey(-1);
+  heap_init.deleteKey(1);
+  EXPECT_EQ(heap_init.extractMin(), 2);
+  EXPECT_EQ(heap_init.extractMin(), 3);
+  EXPECT_EQ(heap_init.extractMin(), 4);
+  EXPECT_EQ(heap_init.getMin(), 5);
 }
 
 int main(int argc, char **argv) {

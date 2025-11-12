@@ -28,6 +28,7 @@ public:
   void increase_key(std::size_t, T);
   void insert(T);
   T extractMax();
+  void clear();
 };
 
 // Биномиальная куча
@@ -67,19 +68,26 @@ template <typename T> class binomial_heap {
   void swap_parent(std::shared_ptr<Node>, std::shared_ptr<Node>);
   void swap(std::shared_ptr<Node>, std::shared_ptr<Node>);
   std::shared_ptr<Node> find(std::shared_ptr<Node>, T) const;
+  std::vector<T> collect(std::weak_ptr<Node>) const;
 
 public:
   binomial_heap();
   binomial_heap(T);
   binomial_heap(std::shared_ptr<Node> &);
   binomial_heap(std::initializer_list<T>);
+  binomial_heap(const binomial_heap<T> &);
+  binomial_heap(binomial_heap<T> &&) noexcept;
+  binomial_heap<T> &operator=(std::initializer_list<T>);
+  binomial_heap<T> &operator=(const binomial_heap<T> &);
+  binomial_heap<T> &operator=(binomial_heap<T> &&) noexcept;
   T extractMin();
   T getMin() const;
   void merge(binomial_heap<T> &);
   std::shared_ptr<Node> find(T) const;
   void insert(T);
-  void decrease_key(T, std::shared_ptr<Node> = nullptr);
+  void decrease_key(T, std::shared_ptr<Node>);
   void deleteKey(T);
+  void clear();
   bool empty() const;
 };
 
@@ -155,6 +163,8 @@ void binary_heap<T>::heapify(std::vector<T> &array, std::size_t root) {
     }
   }
 }
+
+template <typename T> void binary_heap<T>::clear() { this->array.clear(); }
 
 template <typename T>
 void binary_heap<T>::heapify(std::vector<T> &array, std::size_t size,
@@ -244,6 +254,51 @@ binomial_heap<T>::binomial_heap(std::initializer_list<T> list) {
   for (auto i : list) {
     insert(i);
   }
+}
+
+template <typename T>
+binomial_heap<T>::binomial_heap(const binomial_heap<T> &other) {
+  std::vector<T> array = other.collect(other.head);
+  for (auto i : array) {
+    insert(i);
+  }
+}
+
+template <typename T>
+binomial_heap<T>::binomial_heap(binomial_heap<T> &&other) noexcept {
+  while (!other.empty()) {
+    insert(other.extractMin());
+  }
+}
+
+//Операторы присваивания
+template <typename T>
+binomial_heap<T> &binomial_heap<T>::operator=(std::initializer_list<T> list) {
+  this->clear();
+  for (auto i : list) {
+    insert(i);
+  }
+  return *this;
+}
+
+template <typename T>
+binomial_heap<T> &binomial_heap<T>::operator=(const binomial_heap<T> &other) {
+  this->clear();
+  std::vector<T> array = other.collect(other.head);
+  for (auto i : array) {
+    insert(i);
+  }
+  return *this;
+}
+
+template <typename T>
+binomial_heap<T> &
+binomial_heap<T>::operator=(binomial_heap<T> &&other) noexcept {
+  this->clear();
+  while (!other.empty()) {
+    insert(other.extractMin());
+  }
+  return *this;
 }
 
 // Merge для списка деревьев
@@ -382,6 +437,28 @@ template <typename T> T binomial_heap<T>::extractMin() {
 
   return min_key;
 }
+
+//Конвертировать кучу в массив
+template <typename T>
+std::vector<T> binomial_heap<T>::collect(std::weak_ptr<Node> head) const {
+  if (!head.lock()->sibling) {
+    return {head.lock()->key};
+  }
+  std::vector<T> elements;
+  std::weak_ptr<Node> cursor(head);
+  while (cursor.lock()) {
+    elements.push_back(cursor.lock()->key);
+    if (cursor.lock()->child) {
+      std::vector<T> child = collect(cursor.lock()->child);
+      elements.insert(elements.end(), child.begin(), child.end());
+    }
+    cursor = cursor.lock()->sibling;
+  }
+  return elements;
+}
+
+//Очистить кучу
+template <typename T> void binomial_heap<T>::clear() { this->head = nullptr; }
 
 // Найти ноду по ключу
 template <typename T>
