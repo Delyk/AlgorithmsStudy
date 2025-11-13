@@ -25,10 +25,35 @@ public:
   void heapify(std::vector<T> &, std::size_t);
   void build_heap(std::vector<T> &);
   void heapsort(std::vector<T> &);
-  void increase_key(std::size_t, T);
+  void decrease_key(std::size_t, T);
   void insert(T);
-  T extractMax();
+  T extract();
   void clear();
+};
+
+//Левая куча
+template <typename T> class left_heap {
+  struct node {
+    T key;
+    std::shared_ptr<node> left;
+    std::shared_ptr<node> right;
+    int dist;
+    node(T val = T{}) : key(val), left(nullptr), right(nullptr), dist(0) {}
+  };
+
+  std::shared_ptr<node> head;
+
+  void swap(std::shared_ptr<node> &, std::shared_ptr<node> &);
+
+  std::shared_ptr<node> merge(std::shared_ptr<node>, std::shared_ptr<node>);
+
+public:
+  left_heap() : head(nullptr) {}
+  left_heap(T);
+  left_heap(std::initializer_list<T>);
+  void insert(T);
+  T extract() const;
+  void decrease_key(T, T) {}
 };
 
 // Биномиальная куча
@@ -80,7 +105,7 @@ public:
   binomial_heap<T> &operator=(std::initializer_list<T>);
   binomial_heap<T> &operator=(const binomial_heap<T> &);
   binomial_heap<T> &operator=(binomial_heap<T> &&) noexcept;
-  T extractMin();
+  T extract();
   T getMin() const;
   void merge(binomial_heap<T> &);
   std::shared_ptr<Node> find(T) const;
@@ -201,7 +226,7 @@ template <typename T> void binary_heap<T>::build_heap(std::vector<T> &arr) {
 }
 
 // Изменение элемента
-template <typename T> void binary_heap<T>::increase_key(std::size_t i, T data) {
+template <typename T> void binary_heap<T>::decrease_key(std::size_t i, T data) {
   array[i] = data;
   // Поднимаем элемент вверх по дереву
   int next = (i - 1) / 2;
@@ -215,11 +240,11 @@ template <typename T> void binary_heap<T>::increase_key(std::size_t i, T data) {
 // Вставка элемента
 template <typename T> void binary_heap<T>::insert(T data) {
   array.push_back(1);
-  increase_key(array.size() - 1, data);
+  decrease_key(array.size() - 1, data);
 }
 
 // Удаление корня
-template <typename T> T binary_heap<T>::extractMax() {
+template <typename T> T binary_heap<T>::extract() {
   T max = array[0];
   array[0] = array[array.size() - 1];
   array.pop_back();
@@ -267,7 +292,7 @@ binomial_heap<T>::binomial_heap(const binomial_heap<T> &other) {
 template <typename T>
 binomial_heap<T>::binomial_heap(binomial_heap<T> &&other) noexcept {
   while (!other.empty()) {
-    insert(other.extractMin());
+    insert(other.extract());
   }
 }
 
@@ -296,7 +321,7 @@ binomial_heap<T> &
 binomial_heap<T>::operator=(binomial_heap<T> &&other) noexcept {
   this->clear();
   while (!other.empty()) {
-    insert(other.extractMin());
+    insert(other.extract());
   }
   return *this;
 }
@@ -404,7 +429,7 @@ template <typename T> T binomial_heap<T>::getMin() const {
 }
 
 // Извлечь минимальный
-template <typename T> T binomial_heap<T>::extractMin() {
+template <typename T> T binomial_heap<T>::extract() {
   if (!head) {
     throw std::runtime_error("Empty heap");
   }
@@ -525,8 +550,67 @@ template <typename T> void binomial_heap<T>::deleteKey(T key) {
   std::shared_ptr<Node> node = find(key);
   T min = getMin();
   decrease_key(min, node);
-  extractMin();
+  extract();
 }
 
 // Проверка на пустоту
 template <typename T> bool binomial_heap<T>::empty() const { return !head; }
+
+/*** Левосторонняя куча ***/
+//Конструкторы
+template <typename T> left_heap<T>::left_heap(std::initializer_list<T> list) {
+  for (auto i : list) {
+    insert(i);
+  }
+}
+
+template <typename T>
+left_heap<T>::left_heap(T key) : head(std::make_shared<node>(key)) {}
+
+//Поменять местами указатели
+template <typename T>
+void left_heap<T>::swap(std::shared_ptr<node> &left,
+                        std::shared_ptr<node> &right) {
+  T key = left->key;
+  left->key = right->key;
+  right->key = key;
+}
+
+//Слияние куч
+template <typename T>
+std::shared_ptr<typename left_heap<T>::node>
+left_heap<T>::merge(std::shared_ptr<node> left, std::shared_ptr<node> right) {
+  if (!left) {
+    return right;
+  }
+  if (!right) {
+    return left;
+  }
+  if (left->key < right->key) {
+    swap(left, right);
+  }
+
+  left->right = merge(left->right, right);
+
+  if (left->left && left->right) {
+    if (left->right->dist > left->left->dist) {
+      swap(left->left, right->right);
+    }
+  }
+  left->dist++;
+  return left;
+}
+
+//Вставка нового элемента
+template <typename T> void left_heap<T>::insert(T value) {
+  left_heap<T> lh(value);
+  head = merge(head, lh.head);
+}
+
+//Извлечь минимальное
+template <typename T> T left_heap<T>::extract() const {
+  if (!head) {
+    throw std::runtime_error("Empty heap");
+  }
+  return head->key;
+}
