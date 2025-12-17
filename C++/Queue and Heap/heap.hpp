@@ -38,22 +38,27 @@ template <typename T> class left_heap {
     std::shared_ptr<node> left;
     std::shared_ptr<node> right;
     int dist;
-    node(T val = T{}) : key(val), left(nullptr), right(nullptr), dist(0) {}
+    node(T val = T{}, std::shared_ptr<node> left = nullptr,
+         std::shared_ptr<node> right = nullptr)
+        : key(val), left(left), right(right), dist(0) {}
   };
 
   std::shared_ptr<node> head;
 
-  void swap(std::shared_ptr<node> &, std::shared_ptr<node> &);
-
+  int dist(std::shared_ptr<node>) const;
   std::shared_ptr<node> merge(std::shared_ptr<node>, std::shared_ptr<node>);
+  std::shared_ptr<node> find(T &, std::weak_ptr<node>) const;
+  std::shared_ptr<node> findParent(std::weak_ptr<node>) const;
+  void rebaseDist(std::shared_ptr<node>);
+  void updateDist(std::shared_ptr<node>);
 
 public:
   left_heap() : head(nullptr) {}
   left_heap(T);
   left_heap(std::initializer_list<T>);
   void insert(T);
-  T extract() const;
-  void decrease_key(T, T) {}
+  T extract();
+  void decrease_key(T, T);
 };
 
 // Биномиальная куча
@@ -568,37 +573,42 @@ template <typename T>
 left_heap<T>::left_heap(T key) : head(std::make_shared<node>(key)) {}
 
 //Поменять местами указатели
-template <typename T>
-void left_heap<T>::swap(std::shared_ptr<node> &left,
-                        std::shared_ptr<node> &right) {
-  T key = left->key;
-  left->key = right->key;
-  right->key = key;
+// template <typename T>
+// void left_heap<T>::swap(std::shared_ptr<node> &left,
+//                         std::shared_ptr<node> &right) {
+//   T key = left->key;
+//   left->key = right->key;
+//   right->key = key;
+// }
+
+//Расстояние
+template <typename T> int left_heap<T>::dist(std::shared_ptr<node> node) const {
+  if (node) {
+    return node->dist;
+  }
+  return 0;
 }
 
 //Слияние куч
 template <typename T>
 std::shared_ptr<typename left_heap<T>::node>
-left_heap<T>::merge(std::shared_ptr<node> left, std::shared_ptr<node> right) {
-  if (!left) {
-    return right;
-  }
-  if (!right) {
-    return left;
-  }
-  if (left->key < right->key) {
-    swap(left, right);
-  }
+left_heap<T>::merge(std::shared_ptr<node> h1, std::shared_ptr<node> h2) {
+  if (!h1)
+    return h2;
+  if (!h2)
+    return h1;
 
-  left->right = merge(left->right, right);
+  if (h2->key > h1->key)
+    std::swap(h1, h2);
 
-  if (left->left && left->right) {
-    if (left->right->dist > left->left->dist) {
-      swap(left->left, right->right);
-    }
+  h1->right = merge(h1->right, h2);
+
+  if (dist(h1->right) > dist(h1->left)) {
+    std::swap(h1->left, h1->right);
   }
-  left->dist++;
-  return left;
+  h1->dist = dist(h1->right) + 1;
+
+  return h1;
 }
 
 //Вставка нового элемента
@@ -608,9 +618,47 @@ template <typename T> void left_heap<T>::insert(T value) {
 }
 
 //Извлечь минимальное
-template <typename T> T left_heap<T>::extract() const {
+template <typename T> T left_heap<T>::extract() {
   if (!head) {
     throw std::runtime_error("Empty heap");
   }
-  return head->key;
+  T key = head->key;
+  head = merge(head->left, head->right);
+  return key;
 }
+
+//Найти по ключу
+template <typename T>
+std::shared_ptr<typename left_heap<T>::node>
+left_heap<T>::find(T &find, std::weak_ptr<node> head) const {
+  if (!head || head.expired()) {
+    return nullptr;
+  }
+
+  auto current = head.lock();
+  if (current->data == find) {
+    return current;
+  }
+  std::shared_ptr<node> findL = find(find, current->left);
+  std::shared_ptr<node> findR = find(find, current->right);
+
+  if (findL) {
+    return findL;
+  } else if (findR) {
+    return findR;
+  } else {
+    return nullptr;
+  }
+}
+
+//Найти родителя ноды
+template <typename T>
+std::shared_ptr<typename left_heap<T>::node>
+left_heap<T>::findParent(std::weak_ptr<node> head) const {}
+
+//Расчёт расстояния для нового корня
+template <typename T>
+void left_heap<T>::rebaseDist(std::shared_ptr<node> head) {}
+
+//Уменьшить ключ
+template <typename T> void left_heap<T>::decrease_key(T find, T new_key) {}

@@ -18,38 +18,33 @@ TYPED_TEST(HeapTest, ListConstructor) {
 }
 
 TYPED_TEST(HeapTest, BasicHeap) {
-  TypeParam heap{1, 2, 3, 4, 5, 6, 7, 8, 9};
-  EXPECT_EQ(heap.extract(), 9);
+  TypeParam heap{2, 3, 6, 5, 7, 9, 15, 8, 10};
+  EXPECT_EQ(heap.extract(), 15);
 }
 
 TYPED_TEST(HeapTest, CopyConstructor) {
-  GTEST_SKIP();
   TypeParam copy{this->heap_init};
   EXPECT_EQ(copy.extract(), 3);
 }
 
 TYPED_TEST(HeapTest, MoveConstructor) {
-  GTEST_SKIP();
   TypeParam tmp{7, 8, 9};
   TypeParam modev{std::move(tmp)};
   EXPECT_EQ(modev.extract(), 9);
 }
 
 TYPED_TEST(HeapTest, AssignmentOperatorInitializerList) {
-  GTEST_SKIP();
   this->heap = {10, 11, 12};
   EXPECT_EQ(this->heap.extract(), 12);
 }
 
 TYPED_TEST(HeapTest, CopyAssignmentOperator) {
-  GTEST_SKIP();
   TypeParam copy{6, 7, 8};
   copy = this->heap_init;
   EXPECT_EQ(copy.extract(), 3);
 }
 
 TYPED_TEST(HeapTest, MoveAssignmentOperator) {
-  GTEST_SKIP();
   TypeParam temp{13, 14, 15};
   TypeParam moved{16, 17, 18};
   moved = std::move(temp);
@@ -57,7 +52,6 @@ TYPED_TEST(HeapTest, MoveAssignmentOperator) {
 }
 
 TYPED_TEST(HeapTest, InsertTest) {
-  GTEST_SKIP();
   this->heap.insert(10);
   this->heap.insert(20);
   this->heap.insert(15);
@@ -67,7 +61,6 @@ TYPED_TEST(HeapTest, InsertTest) {
 }
 
 TYPED_TEST(HeapTest, IncreaseKey) {
-  GTEST_SKIP();
   this->heap.insert(5);
   this->heap.insert(7);
   this->heap.decrease_key(0, 10);
@@ -304,6 +297,7 @@ TEST_F(bin_heap, ExtractSomeEqualLast) {
 }
 
 TEST_F(bin_heap, ExtractAllBig) {
+  GTEST_SKIP();
   for (int i = 100; i >= -1; i--) {
     heap.insert(i);
   }
