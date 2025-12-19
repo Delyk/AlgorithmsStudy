@@ -60,11 +60,52 @@ TYPED_TEST(HeapTest, InsertTest) {
   EXPECT_EQ(this->heap.extract(), 10);
 }
 
-TYPED_TEST(HeapTest, IncreaseKey) {
+TYPED_TEST(HeapTest, InsertTest2) {
+  this->heap.insert(4);
+  this->heap.insert(8);
+  this->heap.insert(12);
+  this->heap.insert(10);
   this->heap.insert(5);
   this->heap.insert(7);
-  this->heap.decrease_key(0, 10);
+  EXPECT_EQ(this->heap.extract(), 12);
   EXPECT_EQ(this->heap.extract(), 10);
+  EXPECT_EQ(this->heap.extract(), 8);
+  EXPECT_EQ(this->heap.extract(), 7);
+  EXPECT_EQ(this->heap.extract(), 5);
+  EXPECT_EQ(this->heap.extract(), 4);
+}
+
+TYPED_TEST(HeapTest, InsertBig) {
+  const int max = 100;
+  for (int i = 1; i <= max; i++) {
+    this->heap.insert(i);
+  }
+  for (int i = max; i >= 1; i--) {
+    EXPECT_EQ(this->heap.extract(), i);
+  }
+}
+
+TEST(BinHeapIncrease, IncreaseKey) {
+  binary_heap<int> heap;
+  heap.insert(5);
+  heap.insert(7);
+  heap.decrease_key(0, 10);
+  EXPECT_EQ(heap.extract(), 10);
+}
+
+TEST(LeftHeapDecrease, DecraseKey) {
+  left_heap<int> heap;
+  heap.insert(5);
+  heap.insert(7);
+  heap.insert(8);
+  heap.insert(10);
+  heap.insert(4);
+  heap.insert(12);
+  heap.decrease_key(12, 20);
+  heap.decrease_key(10, 15);
+  EXPECT_EQ(heap.extract(), 20);
+  EXPECT_EQ(heap.extract(), 15);
+  EXPECT_EQ(heap.extract(), 8);
 }
 
 TEST(HeapSort, Heapsort) {
@@ -297,11 +338,11 @@ TEST_F(bin_heap, ExtractSomeEqualLast) {
 }
 
 TEST_F(bin_heap, ExtractAllBig) {
-  GTEST_SKIP();
-  for (int i = 100; i >= -1; i--) {
+  const int max = 27;
+  for (int i = max; i >= 1; i--) {
     heap.insert(i);
   }
-  for (int i = -1; i <= 100; i++) {
+  for (int i = 1; i <= max; i++) {
     EXPECT_EQ(heap.extract(), i);
   }
   EXPECT_TRUE(heap.empty());

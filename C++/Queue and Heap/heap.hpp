@@ -48,9 +48,9 @@ template <typename T> class left_heap {
   int dist(std::shared_ptr<node>) const;
   std::shared_ptr<node> merge(std::shared_ptr<node>, std::shared_ptr<node>);
   std::shared_ptr<node> find(T &, std::weak_ptr<node>) const;
-  std::shared_ptr<node> findParent(std::weak_ptr<node>) const;
-  void rebaseDist(std::shared_ptr<node>);
-  void updateDist(std::shared_ptr<node>);
+  std::shared_ptr<node> findParent(std::weak_ptr<node>,
+                                   std::weak_ptr<node>) const;
+  void siftUp(std::shared_ptr<node>);
 
 public:
   left_heap() : head(nullptr) {}
@@ -630,35 +630,56 @@ template <typename T> T left_heap<T>::extract() {
 //Найти по ключу
 template <typename T>
 std::shared_ptr<typename left_heap<T>::node>
-left_heap<T>::find(T &find, std::weak_ptr<node> head) const {
-  if (!head || head.expired()) {
+left_heap<T>::find(T &findK, std::weak_ptr<node> head) const {
+  auto current = head.lock();
+  if (!current || head.expired()) {
     return nullptr;
   }
 
-  auto current = head.lock();
-  if (current->data == find) {
+  if (current->key == findK) {
     return current;
   }
-  std::shared_ptr<node> findL = find(find, current->left);
-  std::shared_ptr<node> findR = find(find, current->right);
-
+  std::shared_ptr<node> findL = find(findK, current->left);
   if (findL) {
     return findL;
-  } else if (findR) {
-    return findR;
-  } else {
-    return nullptr;
   }
+  return find(findK, current->right);
 }
 
 //Найти родителя ноды
 template <typename T>
 std::shared_ptr<typename left_heap<T>::node>
-left_heap<T>::findParent(std::weak_ptr<node> head) const {}
+left_heap<T>::findParent(std::weak_ptr<node> head,
+                         std::weak_ptr<node> child) const {
+  auto cur = head.lock();
+  auto child_l = child.lock();
+  if (!cur || cur == child_l)
+    return nullptr;
 
-//Расчёт расстояния для нового корня
-template <typename T>
-void left_heap<T>::rebaseDist(std::shared_ptr<node> head) {}
+  if (cur->left == child_l || cur->right == child_l) {
+    return cur;
+  }
+  std::shared_ptr<node> left = findParent(cur->left, child);
+  if (left) {
+    return left;
+  }
+  return findParent(cur->right, child);
+}
+
+//Подъём ноды
+template <typename T> void left_heap<T>::siftUp(std::shared_ptr<node> cur) {
+  std::shared_ptr<node> parent = findParent(head, cur);
+  while (cur && cur != head && cur->key > parent->key) {
+    std::swap(parent, cur);
+    cur = findParent(head, cur);
+  }
+}
 
 //Уменьшить ключ
-template <typename T> void left_heap<T>::decrease_key(T find, T new_key) {}
+template <typename T> void left_heap<T>::decrease_key(T find_key, T new_key) {
+  std::shared_ptr<node> nod = find(find_key, head);
+  if (!nod || new_key <= nod->key)
+    return;
+  nod->key = new_key;
+  siftUp(nod);
+}
