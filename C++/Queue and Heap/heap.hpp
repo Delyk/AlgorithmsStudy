@@ -68,7 +68,7 @@ template <typename T> class binomial_heap {
     std::shared_ptr<Node> parent;
     std::shared_ptr<Node> child;
     std::shared_ptr<Node> sibling;
-    int degree;
+    int degree = 0;
     Node(T key = T{})
         : key(key), parent(nullptr), child(nullptr), sibling(nullptr) {}
     operator T() { return key; }
@@ -601,7 +601,7 @@ left_heap<T>::merge(std::shared_ptr<node> h1, std::shared_ptr<node> h2) {
   if (h2->key > h1->key)
     std::swap(h1, h2);
 
-  h1->right = merge(h1->right, h2);
+  h1->left = merge(h1->left, h2);
 
   if (dist(h1->right) > dist(h1->left)) {
     std::swap(h1->left, h1->right);

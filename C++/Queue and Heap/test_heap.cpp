@@ -338,7 +338,7 @@ TEST_F(bin_heap, ExtractSomeEqualLast) {
 }
 
 TEST_F(bin_heap, ExtractAllBig) {
-  const int max = 27;
+  const int max = 100;
   for (int i = max; i >= 1; i--) {
     heap.insert(i);
   }
