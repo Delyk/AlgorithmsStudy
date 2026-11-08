@@ -6,7 +6,6 @@
 #include <memory>
 #include <stdexcept>
 namespace list {
-using t_size = unsigned int;
 
 template <typename T> class list {
 protected:
@@ -15,7 +14,7 @@ protected:
     virtual void clear() = 0;
     T data;
   };
-  t_size size; // Размер
+  size_t size; // Размер
 
 public:
   virtual ~list() = default;
@@ -24,7 +23,7 @@ public:
   virtual void unshift(const T &) = 0; // Вставить в начало списка
   virtual T shift() = 0;               // Убрать из начала списка
   virtual void sort() = 0;             // Сортировать список
-  virtual t_size getSize() const = 0;  // Получить размер списка
+  virtual size_t getSize() const = 0;  // Получить размер списка
   virtual bool empty() const = 0;      // Проверка на пустоту
   virtual void clear() = 0;            // Очистить список
 };
@@ -88,7 +87,7 @@ public:
   T shift() override;
   // Вспомогательные методы
   void sort() override;
-  t_size getSize() const override;
+  size_t getSize() const override;
   bool empty() const override;
   void clear() override;
   // Методы доступа к итератору
@@ -161,7 +160,7 @@ public:
   void sort() override;
   bool empty() const override;
   void clear() override;
-  t_size getSize() const override;
+  size_t getSize() const override;
   // Методы доступа к итератору
   Iterator begin() const;
   Iterator end() const;
@@ -284,7 +283,7 @@ template <typename T> T single_list<T>::pop() {
       cursor = cursor->next;
     }
     auto prev = cursor->next;
-    tmp = prev->list<T>::baseNode::data;
+    tmp = prev->data;
     prev->clear();
     cursor->next = nullptr;
     list<T>::size--;
@@ -308,7 +307,7 @@ template <typename T> T single_list<T>::shift() {
   if (!head) {
     throw std::range_error("List empty\n");
   }
-  T head_data = head->list<T>::baseNode::data;
+  T head_data = head->data;
   std::shared_ptr<node> tmp = head;
   head = head->next;
   tmp->clear();
@@ -413,7 +412,7 @@ template <typename T> void single_list<T>::sort() {
 }
 
 // Геттер
-template <typename T> t_size single_list<T>::getSize() const {
+template <typename T> size_t single_list<T>::getSize() const {
   return list<T>::size;
 }
 
@@ -724,7 +723,7 @@ template <typename T> bool double_list<T>::empty() const {
   return !this->head && !this->tail;
 }
 
-template <typename T> t_size double_list<T>::getSize() const {
+template <typename T> size_t double_list<T>::getSize() const {
   return this->size;
 }
 

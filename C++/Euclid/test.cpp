@@ -3,7 +3,7 @@
 using namespace std;
 
 // Тесты для классического алгоритма Евклида (вычитания)
-TEST(EuclidClassicTest, BasicTests) {
+TEST(BasicTests, EuclidClassicTest) {
   EXPECT_EQ(euclid::euclid_classic(48, 18), 6);
   EXPECT_EQ(euclid::euclid_classic(7, 13), 1);
   EXPECT_EQ(euclid::euclid_classic(0, 5), 5);
@@ -12,7 +12,7 @@ TEST(EuclidClassicTest, BasicTests) {
 }
 
 // Тесты для алгоритма Евклида через остаток от деления
-TEST(EuclidRemainderTest, BasicTests) {
+TEST(BasicTests, EuclidRemainderTest) {
   EXPECT_EQ(euclid::euclid_remainder(48, 18), 6);
   EXPECT_EQ(euclid::euclid_remainder(7, 13), 1);
   EXPECT_EQ(euclid::euclid_remainder(0, 5), 5);
@@ -21,7 +21,7 @@ TEST(EuclidRemainderTest, BasicTests) {
 }
 
 // Тесты для рекурсивного алгоритма Евклида
-TEST(EuclidRecursiveTest, BasicTests) {
+TEST(BasicTests, EuclidRecursiveTest) {
   EXPECT_EQ(euclid::euclid_recursive(48, 18), 6);
   EXPECT_EQ(euclid::euclid_recursive(7, 13), 1);
   EXPECT_EQ(euclid::euclid_recursive(0, 5), 5);

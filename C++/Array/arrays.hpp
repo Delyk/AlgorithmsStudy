@@ -10,7 +10,7 @@ using t_size = unsigned int;
 class universal {
   class elementBase { // Базовый тип для шаблонного наследника
   public:
-    virtual ~elementBase() = default;
+    virtual ~elementBase() = default; 
     virtual elementBase *clone() const = 0;
     virtual const std::type_info &type() const = 0;
   };

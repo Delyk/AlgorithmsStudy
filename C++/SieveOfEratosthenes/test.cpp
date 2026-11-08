@@ -21,8 +21,9 @@ public:
     ifstream in;
     in.open(filename);
     if (!in) {
-      cerr << "Error open file: " << filename;
-      exit(1);
+      cerr << "Error open file: " << filename << endl;
+      cerr << "errno: " << errno << " (" << std::strerror(errno) << ")\n";
+      exit(errno);
     }
     vector<unsigned long long> primes;
     unsigned long long num;
@@ -53,7 +54,7 @@ public:
   bool check_primes_seg(vector<unsigned long long> &generated) {
     for (size_t i = 0; i < generated.size(); i++, j++) {
       for (; j < primes.size(); j++) {
-        if (generated[i] == primes[j]) {
+        if (primes[j] == generated[i]) {
           break;
         }
       }
@@ -87,7 +88,7 @@ TEST_P(Sieves, SimpleSieve) {
 }
 
 TEST_P(Sieves, UnlimitedSieve) {
-  // GTEST_SKIP();
+  //GTEST_SKIP();
   unsigned long long val = GetParam();
   sieve::UnlimitedSieve sieve;
   unsigned long long prime;
@@ -121,6 +122,11 @@ TEST_P(Sieves, UnlimitedSieve_pre_gen) {
   auto start = chrono::high_resolution_clock::now();
 
   vector<unsigned long long> primes;
+  /*
+  unknown file: error: C++ exception with description "bad allocation" thrown in the test body.
+
+  [  FAILED  ] SievesTest/Sieves.UnlimitedSieve_pre_gen/9, where GetParam() = 1000000 (644 ms)
+  */
   if (val < 2) {
     ASSERT_ANY_THROW(sieve.nextPrime());
   } else {

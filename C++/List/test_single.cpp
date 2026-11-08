@@ -294,9 +294,3 @@ TEST(SortTest, SortLargeList) {
     EXPECT_EQ(val, vec[i++]);
   }
 }
-
-int main(int argc, char *argv[]) {
-  ::testing::InitGoogleTest(&argc, argv);
-
-  return RUN_ALL_TESTS();
-}

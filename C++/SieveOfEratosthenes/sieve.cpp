@@ -36,6 +36,7 @@ sieve::SieveOfEratosthenes(unsigned long long n) {
 
 // При инициализации неограниченного решете генерируем массив как обычно
 sieve::UnlimitedSieve::UnlimitedSieve(unsigned long long n) {
+  if(!n) n = 1;
   primes.resize(n + 1, true);
   primes[0] = primes[1] = false;
   for (std::size_t i = 2; i <= n; i++) {
@@ -48,7 +49,7 @@ sieve::UnlimitedSieve::UnlimitedSieve(unsigned long long n) {
   }
 }
 
-// Сначала ищем следующее просто в уже существующем массиве
+// Сначала ищем следующее простое в уже существующем массиве
 bool sieve::UnlimitedSieve::find_next() {
   for (std::size_t i = last_prime + 1; i < primes.size(); i++) {
     if (primes[i]) {
@@ -71,7 +72,7 @@ void sieve::UnlimitedSieve::next_sieve() {
   std::size_t lim = static_cast<std::size_t>(std::sqrt(new_sieve));
   for (std::size_t i = 2; i <= lim; i++) {
     if (primes[i]) {
-      for (std::size_t j = i * i; j <= primes.size(); j += i) {
+      for (std::size_t j = i * i; j < primes.size(); j += i) {
         primes[j] = false;
       }
     }
@@ -96,7 +97,7 @@ std::vector<unsigned long long>
 sieve::SieveOfEratosthenes_skip(unsigned long long n) {
   // Создаём массив вдвое меньшего размера
   std::vector<bool> nums;
-  if (n > 2)
+  if (n > 3)
     nums.resize(n / 2, true);
   else if (n == 2) {
     return {2};
@@ -154,7 +155,7 @@ getStartSize(const std::vector<unsigned long long> &bazis) {
 static std::vector<unsigned long long>
 wheel_factorization(unsigned long long n) {
   // Указываем базис и ищем его длину
-  std::vector<unsigned long long> bazis{2, 3, 5};
+  std::vector<unsigned long long> bazis{2, 3, 5, 7};
   unsigned long long primorial = 1;
   for (auto it = bazis.begin(); it != bazis.end(); it++)
     primorial *= *it;
@@ -192,9 +193,9 @@ sieve::SieveOfEratosthenes_wheel_factorization(unsigned long long n) {
   nums[0] = nums[1] = false;
 
   //Допросеивание до первого простого числа из колеса
-  for (std::size_t i = 2; i < wheel[1] || i < nums.size(); i++) {
+  for (std::size_t i = 2; i < wheel[1] && i < nums.size(); i++) {
     if (nums[i]) {
-      for (std::size_t j = i * i; j < wheel[1] || j < nums.size(); j += i) {
+      for (std::size_t j = i * i; j < nums.size(); j += i) {
         nums[j] = false;
       }
     }
@@ -321,8 +322,15 @@ sieve::SieveOfEratosthenes_linear(unsigned long long n) {
     // Начинаем итерацию в массиве простых чисел
     // пока не достигнем добавленного числа или числа до
     // которого ищем простые
-    for (auto p = pr.begin(); *p <= lp[i] && *p * i <= n; p++) {
-      lp[*p * i] = *p; // Устанавливаем все кратные в ненулевые значения
+    for (std::size_t j = 0; j < pr.size(); ++j) {
+      const unsigned long long p = pr[j];
+      if (p > lp[i] || p * i > n) {
+          break;
+      }
+      lp[p * i] = p;
+      if (j * i > n) {
+          break;
+      }
     }
   }
   return pr;

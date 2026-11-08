@@ -359,7 +359,7 @@ template <typename T, typename U> ull hash_table<T, U>::FibonacciHash(ull key) {
 // слово больше 64)
 template <typename T, typename U>
 ull hash_table<T, U>::FibonacciHashPhi(ull key) {
-  ull w = ULONG_LONG_MAX;
+  ull w = ULONG_MAX;
   ull A = static_cast<ull>(phi * w);
   return ((key * A) >> (sizeof(ull) * 8 - 64)) % array.size();
 }

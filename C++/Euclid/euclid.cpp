@@ -28,6 +28,9 @@ int euclid::euclid_remainder(int a, int b) {
 }
 
 int euclid::euclid_recursive(int a, int b) {
+  if (a < b) {
+    std::swap(a, b);
+  }
   if (b == 0) {
     return a;
   }
