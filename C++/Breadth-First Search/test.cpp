@@ -45,7 +45,7 @@ protected:
     }
 };
 
-using Graphs = ::testing::Types<simple_graph<int>>;
+using Graphs = ::testing::Types<simple_graph<int>, matrix_graph<int>>;
 
 TYPED_TEST_SUITE(GraphTest, Graphs);
 
