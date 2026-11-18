@@ -45,7 +45,7 @@ protected:
     }
 };
 
-using Graphs = ::testing::Types<simple_graph<int>, matrix_graph<int>>;
+using Graphs = ::testing::Types<simple_graph<int>, matrix_graph<int>, list_graph<int>>;
 
 TYPED_TEST_SUITE(GraphTest, Graphs);
 
@@ -172,6 +172,7 @@ TYPED_TEST(GraphTest, CheckNeighboursDir) {
 
 //Добавление, удаление в ориентированном графе
 TYPED_TEST(GraphTest, RemoveEdgesDir) {
+    this->gDirHard.printGraph();
     this->gDirHard.remove(4, 2);
     this->gDirHard.remove(1, 3);
     this->gDirHard.remove(3, 2);

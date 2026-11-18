@@ -431,4 +431,191 @@ bool matrix_graph<T>::empty() const {
     return graph.empty();
 }
 
+/*** Граф на списке смежности - каждой вершине соответствует коллекция её соседей ***/
+template<typename T>
+class list_graph : public graph<T> {
+    bool directed;
+    std::unordered_map<T, std::list<std::pair<T, int>>> graph;
+public:
+    list_graph(bool d = false) : directed(d) {}
+    list_graph(std::initializer_list<std::pair<T,T>>, bool = false);
+    list_graph(std::initializer_list<std::tuple<T, T, int>>, bool = false);
+    list_graph(const list_graph&);
+    list_graph(list_graph&&) noexcept;
+
+    list_graph& operator=(const list_graph&);
+    list_graph& operator=(list_graph&&) noexcept;
+
+    void add(T, T, int = 1) override;
+    void remove(T, T) override;
+    std::vector<T> neighbours(T) const override;
+    int edgeExist(T, T) const override;
+    void printGraph() const override;
+
+    bool empty() const override;
+};
+
+/*** Методы графа на основе списка смежности ***/
+//Конструктор списка
+template<class T>
+list_graph<T>::list_graph(std::initializer_list<std::pair<T,T>> list, bool d) : directed(d) {
+    for(const auto& [u, v] : list) {
+        this->add(u, v);
+    }
+}
+
+//Конструктор списка 2
+template<class T>
+list_graph<T>::list_graph(std::initializer_list<std::tuple<T, T, int>> list, bool d) : directed(d) {
+    for(const auto& [u, v, w] : list) {
+        this->add(u, v, w);
+    }
+}
+
+//Конструктор копирования
+template<class T>
+list_graph<T>::list_graph(const list_graph& other) {
+    this->graph = other.graph;
+}
+
+//Конструктор move-копирования
+template<class T>
+list_graph<T>::list_graph(list_graph&& other) noexcept {
+    this->graph = other.graph;
+    other.graph.clear();
+}
+
+//Оператор присваивания-копирования
+template <typename T>
+list_graph<T>& list_graph<T>::operator=(const list_graph& other) {
+    this->graph = other.graph;
+    return *this;
+}
+
+//Оператор присваивания-move
+template <typename T>
+list_graph<T>& list_graph<T>::operator=(list_graph&& other) noexcept {
+    this->graph = other.graph;
+    other.graph.clear();
+    return *this;
+}
+
+//Проверить существование связи
+template<class T>
+int list_graph<T>::edgeExist(T u, T v) const {
+    try {
+    const std::list<std::pair<T, int>> &vs = graph.at(u);
+    for(const auto& [p, t] : vs) {
+        if(p == v) {
+            return t;
+        }
+    }
+    if(!directed) {
+        const auto &vs1 = graph.at(v);
+        for(const auto& [p, t] : vs) {
+        if(p == u) {
+            return t;
+        }
+    }
+    }
+    } catch(std::exception &e) {
+        return 0;
+    }
+    return 0;
+}
+
+//Добавить связь
+template<class T>
+void list_graph<T>::add(T u, T v, int w) {
+    if(!this->edgeExist(u, v)) {
+        graph[u].push_back({v, w});
+        if(!directed) {
+        for(auto& [cur_vertex, list] : graph) { 
+            for(auto& [check_vertex, weight] : list) { //p - это list, d это v, k это weight
+                if(check_vertex == v) {
+                    bool already_have = false;
+                    for(auto& [double_v, w] : graph[v]) { //Проверить не добавляли ли мы эту вершину уже
+                        if(double_v == cur_vertex) {
+                            already_have = true;
+                            break;
+                        }
+                    }
+                    if(!already_have) {
+                    graph[v].push_back({cur_vertex, weight});
+                    break;
+                    }
+                }
+            }
+        }
+        }
+    }
+}
+
+//Получить соседей вершины
+template<class T>
+std::vector<T> list_graph<T>::neighbours(T u) const {
+    std::vector<T> n;
+    try { 
+    const std::list<std::pair<T, int>> &v = graph.at(u);
+    for(const auto& [p, t] : v) {
+        if(t) {
+            n.push_back(p);
+        }
+    }
+    } catch(std::exception &e) {
+        return {};
+    }
+    return n;
+}
+
+//Удалить связь
+template<class T>
+void list_graph<T>::remove(T u, T v) {
+    if(this->edgeExist(u, v)) {
+        std::list<std::pair<T, int>> &vs = graph[u];
+        for(auto it = vs.begin(); it != vs.end(); ++it) {
+            if(it->first == v) {
+                vs.erase(it);
+                break;
+            }
+        }
+        if(!directed) {
+            std::list<std::pair<T, int>> &nvs = graph[v];
+            for(auto it = nvs.begin(); it != nvs.end(); ++it) {
+            if(it->first == u) {
+                nvs.erase(it);
+                break;
+            }
+            }
+            if(nvs.empty()) {
+                graph.erase(v);
+        }
+        }
+        if(vs.empty()) {
+            graph.erase(u);
+        }
+    }
+}
+
+//Напечатать граф
+template<class T>
+void list_graph<T>::printGraph() const {
+    for(const auto& [v, vect] : graph) {
+        for(const auto& [u, w] : vect) {
+            std::cout << v;
+            std::cout << " -(" << w << ")-";
+            if(directed) {
+                std::cout << '>';
+            }
+            std::cout << ' ' << u << std::endl;
+        }
+    }
+}
+
+//Проверка на пустоту
+template<class T>
+bool list_graph<T>::empty() const {
+    return graph.empty();
+}
+
 }
