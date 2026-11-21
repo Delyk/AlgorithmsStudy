@@ -27,22 +27,22 @@ protected:
     Graph gDirHard;
 
     GraphTest() : gDir({{1, 2, 4},
-                        {2, 3, -1},
+                        {2, 3, 1},
                         {3, 1, 5}},
                        true),
                   gDirHard({{3, 1, 2},
                             {3, 2, 8},
                             {4, 2, 3},
                             {4, 3, 4},
-                            {4, 5, -5},
+                            {4, 5, 5},
                             {5, 3, 1},
-                            {3, 1, -100}},
+                            {3, 1, 100}},
                            true)
     {
     }
 };
 
-using Graphs = ::testing::Types<simple_graph<int>, matrix_graph<int>, list_graph<int>>;
+using Graphs = ::testing::Types<simple_graph<int>, matrix_graph<int>, list_graph<int>, strange_graph<int>>;
 
 TYPED_TEST_SUITE(GraphTest, Graphs);
 
@@ -160,7 +160,7 @@ TYPED_TEST(GraphTest, CheckEdgesDir)
     EXPECT_EQ(this->gDirHard.edgeExist(3, 1), 2);
     EXPECT_EQ(this->gDirHard.edgeExist(4, 3), 4);
     EXPECT_EQ(this->gDirHard.edgeExist(5, 3), 1);
-    EXPECT_EQ(this->gDirHard.edgeExist(4, 5), -5);
+    EXPECT_EQ(this->gDirHard.edgeExist(4, 5), 5);
     EXPECT_EQ(this->gDirHard.edgeExist(4, 2), 3);
     EXPECT_FALSE(this->gDirHard.edgeExist(5, 4));
     EXPECT_FALSE(this->gDirHard.edgeExist(2, 3));
@@ -213,4 +213,9 @@ TYPED_TEST(GraphTest, RemoveEdgesDir)
     this->gDirHard.remove(3, 1);
     EXPECT_FALSE(this->gDirHard.edgeExist(4, 3));
     EXPECT_TRUE(this->gDirHard.empty());
+}
+
+TYPED_TEST(GraphTest, ExceptionTest) {
+    EXPECT_ANY_THROW(TypeParam newGr({{1, 1}}));
+    EXPECT_ANY_THROW(TypeParam newGr({{1, 1, -199}}));
 }

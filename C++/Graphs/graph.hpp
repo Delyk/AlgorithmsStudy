@@ -2,12 +2,13 @@
 #include <vector>
 #include <list>
 #include <unordered_map>
+#include <map>
 
 namespace graph
 {
 
     template <typename T>
-    class graph
+    class basic_graph
     {
     public:
         virtual void add(T, T, int = 1) = 0;
@@ -20,7 +21,7 @@ namespace graph
 
     // Список рёбер - каждому ребру соответствуют две его вершины
     template <typename T>
-    class simple_graph : public graph<T>
+    class simple_graph : public basic_graph<T>
     {
         bool directed;
         struct edge
@@ -138,6 +139,14 @@ namespace graph
     template <typename T>
     void simple_graph<T>::add(T u, T v, int w)
     {
+        if (u == v)
+        {
+            throw std::exception("No loops!\n");
+        }
+        if (w < 0)
+        {
+            throw std::exception("Weight can't be less than zero!\n");
+        }
         if (!edgeExist(u, v))
         {
             edges.push_back({u, v, w, this->directed});
@@ -232,7 +241,7 @@ namespace graph
 
     /*** Граф в виде матрицы смежности - строки и столбцы это вершины графа, а значения матрицы это вес рёбер ***/
     template <typename T>
-    class matrix_graph : public graph<T>
+    class matrix_graph : public basic_graph<T>
     {
         bool directed;
         template <typename K>
@@ -429,6 +438,14 @@ namespace graph
     template <typename T>
     void matrix_graph<T>::add(T u, T v, int w)
     {
+        if (u == v)
+        {
+            throw std::exception("No loops!\n");
+        }
+        if (w < 0)
+        {
+            throw std::exception("Weight can't be less than zero!\n");
+        }
         if (!this->edgeExist(u, v))
             graph[u][v] = w;
     }
@@ -525,7 +542,7 @@ namespace graph
 
     /*** Граф на списке смежности - каждой вершине соответствует коллекция её соседей ***/
     template <typename T>
-    class list_graph : public graph<T>
+    class list_graph : public basic_graph<T>
     {
         bool directed;
         std::unordered_map<T, std::list<std::pair<T, int>>> graph;
@@ -575,12 +592,14 @@ namespace graph
     list_graph<T>::list_graph(const list_graph &other)
     {
         this->graph = other.graph;
+        this->directed = other.directed;
     }
 
     // Конструктор move-копирования
     template <class T>
     list_graph<T>::list_graph(list_graph &&other) noexcept
     {
+        this->directed = other.directed;
         this->graph = other.graph;
         other.graph.clear();
     }
@@ -589,6 +608,7 @@ namespace graph
     template <typename T>
     list_graph<T> &list_graph<T>::operator=(const list_graph &other)
     {
+        this->directed = other.directed;
         this->graph = other.graph;
         return *this;
     }
@@ -597,6 +617,7 @@ namespace graph
     template <typename T>
     list_graph<T> &list_graph<T>::operator=(list_graph &&other) noexcept
     {
+        this->directed = other.directed;
         this->graph = other.graph;
         other.graph.clear();
         return *this;
@@ -639,6 +660,14 @@ namespace graph
     template <class T>
     void list_graph<T>::add(T u, T v, int w)
     {
+        if (u == v)
+        {
+            throw std::exception("No loops!\n");
+        }
+        if (w < 0)
+        {
+            throw std::exception("Weight can't be less than zero!\n");
+        }
         if (!this->edgeExist(u, v))
         {
             graph[u].push_back({v, w});
@@ -760,18 +789,277 @@ namespace graph
 
     /*** Граф матрицей инцендетности - столбцы рёбра, а строки вершины***/
     template <typename T>
-    class strange_graph : public graph<T>
+    class strange_graph : public basic_graph<T>
     {
+        bool directed;
+        std::map<T, std::map<int, int>> matrix;
 
     public:
-        void add(T, T, int = 1) = 0;
-        void remove(T, T) = 0;
-        std::vector<T> neighbours(T) const = 0;
-        int edgeExist(T, T) const = 0;
-        void printGraph() const = 0;
-        bool empty() const = 0;
+        strange_graph(bool d = false) : directed(d) {}
+        strange_graph(std::initializer_list<std::pair<T, T>>, bool = false);
+        strange_graph(std::initializer_list<std::tuple<T, T, int>>, bool = false);
+        strange_graph(const strange_graph &);
+        strange_graph(strange_graph &&) noexcept;
+
+        strange_graph &operator=(const strange_graph &);
+        strange_graph &operator=(strange_graph &&) noexcept;
+
+        void add(T, T, int = 1);
+        void remove(T, T);
+        std::vector<T> neighbours(T) const;
+        int edgeExist(T, T) const;
+        void printGraph() const;
+        bool empty() const;
     };
 
     /*** Методы графа на матрице инцендентности ***/
+    // Конструктор списка
+    template <class T>
+    strange_graph<T>::strange_graph(std::initializer_list<std::pair<T, T>> list, bool d) : directed(d)
+    {
+        for (auto &[u, v] : list)
+        {
+            this->add(u, v);
+        }
+    }
 
+    // Конструктор списка 2
+    template <class T>
+    strange_graph<T>::strange_graph(std::initializer_list<std::tuple<T, T, int>> list, bool d) : directed(d)
+    {
+        for (auto &[u, v, w] : list)
+        {
+            this->add(u, v, w);
+        }
+    }
+
+    // Конструктор копирования
+    template <class T>
+    strange_graph<T>::strange_graph(const strange_graph &other)
+    {
+        this->directed = other.directed;
+        this->matrix = other.matrix;
+    }
+
+    // Конструктор перемещения
+    template <class T>
+    strange_graph<T>::strange_graph(strange_graph &&other) noexcept
+    {
+        this->directed = other.directed;
+        this->matrix = other.matrix;
+        other.matrix.clear();
+    }
+
+    // Присваивание копирования
+    template <class T>
+    strange_graph<T> &strange_graph<T>::operator=(const strange_graph &other)
+    {
+        this->directed = other.directed;
+        this->matrix = other.matrix;
+        return *this;
+    }
+
+    // Присваивание перемещения
+    template <class T>
+    strange_graph<T> &strange_graph<T>::operator=(strange_graph &&other) noexcept
+    {
+        this->directed = other.directed;
+        this->matrix = other.matrix;
+        other.matrix.clear();
+        return *this;
+    }
+
+    // Проверить что вершины существуют
+    template <class T>
+    int strange_graph<T>::edgeExist(T u, T v) const
+    {
+        try
+        {
+            std::map<int, int> edges_u = matrix.at(u);
+            std::map<int, int> edges_v = matrix.at(v);
+            for (auto it_u = edges_u.begin(); it_u != edges_u.end(); it_u++)
+            {
+                if(it_u->second < 0) {
+                    continue;
+                }
+                for (auto it_v = edges_v.begin(); it_v != edges_v.end(); it_v++)
+                {
+                    if (!directed)
+                    {
+                        if (it_u->first == it_v->first && it_u->second == it_v->second)
+                        {
+                            return it_u->second;
+                        }
+                    }
+                    else
+                    {
+                        if (it_u->first == it_v->first && it_u->second == -(it_v->second))
+                        {
+                            return it_u->second;
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+        catch (std::out_of_range &e)
+        {
+            return 0;
+        }
+    }
+
+    // Добавить вершины
+    template <class T>
+    void strange_graph<T>::add(T u, T v, int w)
+    {
+        if (u == v)
+        {
+            throw std::exception("No loops!\n");
+        }
+        if (w < 0)
+        {
+            throw std::exception("Weight can't be less than zero!\n");
+        }
+        if (!this->edgeExist(u, v))
+        {
+            std::map<int, int> &edges_u = matrix[u];
+            std::map<int, int> &edges_v = matrix[v];
+            int last_u = 0;
+            if (!edges_u.empty())
+            {
+                last_u = edges_u.rbegin()->first + 1;
+                if(edges_v.find(last_u) != edges_v.end()) {
+                    last_u = edges_v.rbegin()->first + 1;
+                }
+            }
+            edges_u[last_u] = w;
+
+            int last_v = last_u;
+            if (directed)
+            {
+                edges_v[last_v] = -w;
+            }
+            else
+            {
+                edges_v[last_v] = w;
+            }
+        }
+    }
+
+    // Получить всех соседей вершины
+    template <class T>
+    std::vector<T> strange_graph<T>::neighbours(T u) const
+    {
+        std::vector<T> n;
+        try
+        {
+            std::map<int, int> edges = matrix.at(u);
+            for (auto it = matrix.begin(); it != matrix.end(); it++)
+            {
+                if (it->first == u)
+                {
+                    continue;
+                }
+                std::map<int, int> checkE = it->second;
+                if (directed)
+                {
+
+                    for (auto it_u = edges.begin(); it_u != edges.end(); it_u++)
+                    {
+                        if (it_u->second < 0)
+                        {
+                            continue;
+                        }
+                        auto find = checkE.find(it_u->first);
+                        if (find != checkE.end())
+                        {
+                            if (-(find->second) == it_u->second)
+                                n.push_back(it->first);
+                        }
+                    }
+                }
+                else
+                {
+                    for (auto it_u = edges.begin(); it_u != edges.end(); it_u++)
+                    {
+                        auto find = checkE.find(it_u->first);
+                        if (find != checkE.end())
+                        {
+                            n.push_back(it->first);
+                        }
+                    }
+                }
+            }
+        }
+        catch (std::out_of_range &e)
+        {
+            return n;
+        }
+        return n;
+    }
+
+    // Удалить связь
+    template <class T>
+    void strange_graph<T>::remove(T u, T v)
+    {
+        if (this->edgeExist(u, v))
+        {
+            try
+            {
+                std::map<int, int> &edges_u = matrix.at(u);
+                std::map<int, int> &edges_v = matrix.at(v);
+                for (auto it_u = edges_u.begin(); it_u != edges_u.end(); it_u++)
+                {
+                    for (auto it_v = edges_v.begin(); it_v != edges_v.end();)
+                    {
+                        const bool isDuplicate =
+                            it_u->first == it_v->first &&
+                            (!directed || it_u->second == -it_v->second);
+
+                        if (isDuplicate)
+                        {
+                            it_u = edges_u.erase(it_u);
+                            it_v = edges_v.erase(it_v);
+                            if (it_u == edges_u.end())
+                            {
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            it_v++;
+                        }
+                    }
+                    if (it_u == edges_u.end())
+                    {
+                        break;
+                    }
+                }
+                if(edges_u.empty()) {
+                    matrix.erase(matrix.find(u));
+                }
+                if(edges_v.empty()) {
+                    matrix.erase(matrix.find(v));
+                }
+            }
+            catch (std::out_of_range &e)
+            {
+                return;
+            }
+        }
+    }
+
+    // Напечатать граф
+    template <class T>
+    void strange_graph<T>::printGraph() const
+    {
+        std::cout << "Мне лень реализовывать этот метод." << std::endl;
+    }
+
+    // Проверка на пустоту
+    template <class T>
+    bool strange_graph<T>::empty() const
+    {
+        return matrix.empty();
+    }
 }
